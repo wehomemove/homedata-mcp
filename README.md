@@ -42,6 +42,27 @@ homedata-mcp --help
 
 ---
 
+## CLI
+
+The package also installs a `homedata` command — same data as the MCP
+server but for human shells, scripting, and CI. Useful for quick lookups,
+demos, and piping into other tools.
+
+```bash
+homedata property 100021421083
+homedata epc 100021421083 --field current_energy_efficiency
+homedata search "10 downing street" --postcode SW1A2AA
+homedata flood 100021421083 --compact
+homedata batch 100021421083 100022121211
+```
+
+Pass `--field <dotted.path>` to extract a single value (handy for shell
+pipelines) and `--compact` for single-line JSON. Reads the same
+`HOMEDATA_API_KEY` env var as the MCP server. Run `homedata --help` for
+the full list of subcommands.
+
+---
+
 ## Wire it into Claude Desktop
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`

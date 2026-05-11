@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "homedata-mcp"
-version = "0.1.2"
+version = "0.2.0"
 description = "Model Context Protocol (MCP) server for the Homedata UK property data API - 29M UK addresses, EPC, planning, flood risk, demographics and more."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -73,6 +73,7 @@ Changelog = "https://github.com/wehomemove/homedata-mcp/blob/main/CHANGELOG.md"
 
 [project.scripts]
 homedata-mcp = "homedata_mcp.server:main"
+homedata = "homedata_mcp.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["homedata_mcp*"]

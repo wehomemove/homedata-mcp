@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "homedata-mcp"
+version = "0.1.2"
+description = "Model Context Protocol (MCP) server for the Homedata UK property data API - 29M UK addresses, EPC, planning, flood risk, demographics and more."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Homedata", email = "support@homedata.co.uk" }
+]
+maintainers = [
+  { name = "Homedata", email = "support@homedata.co.uk" }
+]
+keywords = [
+  "mcp",
+  "model-context-protocol",
+  "homedata",
+  "uk-property",
+  "property-data",
+  "epc",
+  "uprn",
+  "land-registry",
+  "claude",
+  "claude-desktop",
+  "cursor",
+  "llm",
+  "ai-tools",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
+dependencies = [
+  "fastmcp>=0.2.0",
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "build>=1.0",
+  "ruff>=0.4",
+]
+
+[project.urls]
+Homepage = "https://homedata.co.uk"
+Documentation = "https://homedata.co.uk/docs"
+API = "https://api.homedata.co.uk"
+Pricing = "https://homedata.co.uk/pricing"
+Source = "https://github.com/wehomemove/homedata-mcp"
+Issues = "https://github.com/wehomemove/homedata-mcp/issues"
+Changelog = "https://github.com/wehomemove/homedata-mcp/blob/main/CHANGELOG.md"
+
+[project.scripts]
+homedata-mcp = "homedata_mcp.server:main"
+
+[tool.setuptools.packages.find]
+include = ["homedata_mcp*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+homedata_mcp = ["py.typed"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -6,6 +6,13 @@ Run with::
 
 The server speaks MCP over stdio so it can be wired directly into Claude
 Desktop, Cursor, or any other MCP-aware client.
+
+Signup-only mode:
+    When HOMEDATA_API_KEY is not set, the server still starts but registers
+    only the signup tools (`start_homedata_signup`, `check_homedata_api_key`)
+    so an AI coding assistant can walk the user through getting an API key
+    without us bailing out at startup. After the user signs up and exports
+    HOMEDATA_API_KEY, restart the server to activate the 16 data tools.
 """
 
 from __future__ import annotations
@@ -22,10 +29,15 @@ from .client import HomedataClient, HomedataError
 from .tools import register_all
 
 
-def build_server(client: HomedataClient | None = None) -> tuple[FastMCP, HomedataClient]:
-    """Construct a FastMCP server with all Homedata tools registered.
+def build_server(client: HomedataClient | None = None) -> tuple[FastMCP, HomedataClient | None]:
+    """Construct a FastMCP server with the appropriate tools registered.
 
-    Exposed for testing - production users should call :func:`main`.
+    Exposed for testing — production users should call :func:`main`.
+
+    The returned client may be None when HOMEDATA_API_KEY is unset; in that
+    case only the signup tools are registered, giving the AI agent a way to
+    bootstrap a brand-new user into the product before the data tools are
+    accessible.
     """
     mcp = FastMCP(
         name="homedata",
@@ -35,11 +47,19 @@ def build_server(client: HomedataClient | None = None) -> tuple[FastMCP, Homedat
             "tax, demographics, crime, schools, broadband, and transport. "
             "Resolve text addresses to a UPRN with `search_address`, then "
             "use the UPRN-keyed tools for everything else. Postcode-keyed "
-            "tools cover area-level context."
+            "tools cover area-level context. "
+            "If HOMEDATA_API_KEY is not set, call `start_homedata_signup` "
+            "first to walk the user through getting one — the 16 data tools "
+            "activate once they verify their email + restart this server."
         ),
     )
     if client is None:
-        client = HomedataClient.from_env()
+        try:
+            client = HomedataClient.from_env()
+        except HomedataError:
+            # Signup-only mode — register_all() will skip the data tools and
+            # register just the signup module.
+            client = None
     register_all(mcp, client)
     return mcp, client
 
@@ -49,7 +69,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="homedata-mcp",
         description=(
             "MCP server for the Homedata UK property data API. "
-            "Exposes 16 tools to AI coding assistants over stdio."
+            "Exposes 16 data tools (plus 2 signup tools) to AI coding assistants over stdio."
         ),
     )
     parser.add_argument(
@@ -67,17 +87,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entry point - referenced by ``[project.scripts]`` in pyproject.toml."""
+    """CLI entry point — referenced by ``[project.scripts]`` in pyproject.toml."""
     _parse_args(argv)
 
+    # Signup-only mode: HOMEDATA_API_KEY is not required to start the server.
+    # The signup tools register unconditionally so an AI agent can bootstrap
+    # a brand-new user without us bailing out at startup. Data tools register
+    # only when the key is present + the client builds successfully.
     if not os.environ.get("HOMEDATA_API_KEY", "").strip():
         print(
-            "homedata-mcp: HOMEDATA_API_KEY environment variable is not set.\n"
-            "Get an API key at https://homedata.co.uk/developer and set it before "
-            "starting the MCP server.",
+            "homedata-mcp: HOMEDATA_API_KEY is not set — running in signup-only mode. "
+            "Only `start_homedata_signup` and `check_homedata_api_key` will be available. "
+            "After the user signs up at https://homedata.co.uk/register and exports "
+            "HOMEDATA_API_KEY, restart this server to activate the 16 data tools.",
             file=sys.stderr,
         )
-        return 2
 
     try:
         mcp, client = build_server()
@@ -88,11 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         mcp.run(transport="stdio")
     finally:
-        try:
-            asyncio.run(client.aclose())
-        except RuntimeError:
-            # Event loop already closed (e.g. KeyboardInterrupt during run); ignore.
-            pass
+        if client is not None:
+            try:
+                asyncio.run(client.aclose())
+            except RuntimeError:
+                # Event loop already closed (e.g. KeyboardInterrupt during run); ignore.
+                pass
     return 0
 
 

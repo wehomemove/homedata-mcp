@@ -5,6 +5,31 @@ All notable changes to `homedata-mcp` will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-19
+
+### Added
+- **Signup-only mode** — the server now starts when `HOMEDATA_API_KEY` is
+  unset instead of bailing at startup. Two new tools register
+  unconditionally so an AI coding assistant can bootstrap a brand-new user
+  before they have an API key:
+  - `start_homedata_signup(email?)` — returns the signup URL, free-tier
+    details, and a numbered checklist of what the user needs to do to
+    activate the rest of the tools.
+  - `check_homedata_api_key()` — diagnostic that tells the AI agent
+    whether the key is set, valid, or whether the user needs to restart
+    the MCP server after setting it. Never echoes key material — only a
+    6-character prefix for diagnosis.
+- When the API key is missing, the data tools (`search_address`,
+  `lookup_property`, etc.) are not registered. Existing behaviour for the
+  configured case is unchanged — all 16 data tools register as before.
+
+### Why
+  Previously, installing `homedata-mcp` and starting the server before
+  signing up for a key failed with a startup error and no guidance. New
+  users now get a smooth path: install → start → AI agent calls
+  `start_homedata_signup` → user follows the link → restart server →
+  data tools available.
+
 ## [0.2.0] - 2026-05-11
 
 ### Added

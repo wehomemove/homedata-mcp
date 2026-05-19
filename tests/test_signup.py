@@ -93,8 +93,81 @@ async def test_check_homedata_api_key_when_env_set_but_client_none():
     assert data["configured"] is True
     # Only the prefix surfaces — never the full key
     assert data["key_prefix"] == "hk_tes…"
-    assert "key" not in data or "hk_test_abc123" not in str(data)
+    # Strict secret-leak check (was OR — too permissive; an unrelated 'key'
+    # absence would have made the assertion pass without verifying the
+    # secret itself was scrubbed)
+    assert "hk_test_abc123" not in str(data)
     assert "restart" in data["next_step"].lower()
+
+
+@pytest.mark.asyncio
+async def test_check_homedata_api_key_when_client_succeeds():
+    """API key set + client returns data → 'valid' message + no leakage."""
+
+    class _SuccessClient:
+        async def get(self, path, params=None):
+            return {"results": [{"uprn": "100023336956"}]}
+
+    mcp = FastMCP(name="test")
+    signup.register(mcp, client=_SuccessClient())
+
+    with patch.dict(os.environ, {"HOMEDATA_API_KEY": "hk_test_abc123"}):
+        tool = await mcp.get_tool("check_homedata_api_key")
+        result = await tool.run({})
+        data = _unwrap(result)
+
+    assert data["configured"] is True
+    assert data["key_prefix"] == "hk_tes…"
+    assert "valid" in data["message"].lower()
+    # Secret never appears in the response payload
+    assert "hk_test_abc123" not in str(data)
+
+
+@pytest.mark.asyncio
+async def test_check_homedata_api_key_when_client_raises():
+    """Client raises → user gets a generic message + class name, NOT raw exc text."""
+
+    class _BrokenClient:
+        async def get(self, path, params=None):
+            raise ConnectionError("super-sensitive internal details that must not leak")
+
+    mcp = FastMCP(name="test")
+    signup.register(mcp, client=_BrokenClient())
+
+    with patch.dict(os.environ, {"HOMEDATA_API_KEY": "hk_test_abc123"}):
+        tool = await mcp.get_tool("check_homedata_api_key")
+        result = await tool.run({})
+        data = _unwrap(result)
+
+    assert data["configured"] is True
+    assert "warning" in data
+    # The class name appears (ConnectionError) but raw exception text doesn't
+    assert "ConnectionError" in data["warning"]
+    assert "super-sensitive" not in str(data)
+    assert "hk_test_abc123" not in str(data)
+
+
+@pytest.mark.asyncio
+async def test_check_homedata_api_key_when_client_returns_error_dict():
+    """API returned a structured error → surface it without leaking the key."""
+
+    class _ApiErrorClient:
+        async def get(self, path, params=None):
+            return {"error": "unauthorised", "detail": "Invalid API key"}
+
+    mcp = FastMCP(name="test")
+    signup.register(mcp, client=_ApiErrorClient())
+
+    with patch.dict(os.environ, {"HOMEDATA_API_KEY": "hk_test_abc123"}):
+        tool = await mcp.get_tool("check_homedata_api_key")
+        result = await tool.run({})
+        data = _unwrap(result)
+
+    assert data["configured"] is True
+    assert "warning" in data
+    # API error detail is OK to surface (it's already designed for end users)
+    assert "Invalid API key" in data["warning"]
+    assert "hk_test_abc123" not in str(data)
 
 
 @pytest.mark.asyncio

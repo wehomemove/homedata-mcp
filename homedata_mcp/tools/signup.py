@@ -17,10 +17,13 @@ Why this matters:
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
 from ..client import HomedataClient
+
+logger = logging.getLogger(__name__)
 
 SIGNUP_URL = "https://homedata.co.uk/register"
 API_KEYS_DASHBOARD_URL = "https://homedata.co.uk/developer/api-keys"
@@ -138,10 +141,17 @@ def register(mcp, client: HomedataClient | None) -> None:
                 params={"q": "10 Downing Street", "limit": 1},
             )
         except Exception as exc:  # pragma: no cover — network errors are env-specific
+            # Log the full exception locally for debugging, but surface only the
+            # exception class name to the AI agent / user. Raw exception text
+            # can leak auth headers, internal hostnames, file paths, etc.
+            logger.exception("check_homedata_api_key: test call failed")
             return {
                 "configured": True,
                 "key_prefix": api_key[:6] + "…",
-                "warning": f"API key is set but the test call failed: {exc}",
+                "warning": (
+                    f"API key is set but the test call failed ({exc.__class__.__name__}). "
+                    "This usually means a network problem or a revoked key."
+                ),
                 "next_step": (
                     "Check connectivity to api.homedata.co.uk. If the key was "
                     f"revoked, rotate it at {API_KEYS_DASHBOARD_URL}."

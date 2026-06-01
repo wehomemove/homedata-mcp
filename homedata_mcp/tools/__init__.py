@@ -7,10 +7,22 @@ The signup module is special: it can be registered with client=None so the
 AI agent has a way to onboard a user before HOMEDATA_API_KEY is set.
 """
 
-from . import address, epc, listings, local, planning, profile, property, risk, signup
+from . import (
+    address,
+    council_tax,
+    epc,
+    listings,
+    local,
+    planning,
+    profile,
+    property,
+    risk,
+    signup,
+)
 
 __all__ = [
     "address",
+    "council_tax",
     "epc",
     "listings",
     "local",
@@ -40,6 +52,7 @@ def register_all(mcp, client) -> None:
         return
 
     property.register(mcp, client)
+    council_tax.register(mcp, client)
     epc.register(mcp, client)
     risk.register(mcp, client)
     listings.register(mcp, client)

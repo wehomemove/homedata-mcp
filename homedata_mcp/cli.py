@@ -49,41 +49,41 @@ async def _run(args: argparse.Namespace) -> int:
     cmd = args.command
     try:
         if cmd == "property":
-            data = await client.get(f"/api/properties/{args.uprn}/")
+            data = await client.get(f"/properties/{args.uprn}/")
         elif cmd == "epc":
-            data = await client.get(f"/api/epc-checker/{args.uprn}/")
+            data = await client.get(f"/epc-checker/{args.uprn}/")
         elif cmd == "flood":
-            data = await client.get("/api/flood-risk/", params={"uprn": args.uprn})
+            data = await client.get("/flood-risk/", params={"uprn": args.uprn})
         elif cmd == "sales":
-            data = await client.get("/api/property_sales/", params={"uprn": args.uprn})
+            data = await client.get("/property_sales/", params={"uprn": args.uprn})
         elif cmd == "listings":
-            data = await client.get("/api/property_listings/", params={"uprn": args.uprn})
+            data = await client.get("/property_listings/", params={"uprn": args.uprn})
         elif cmd == "comparables":
-            data = await client.get(f"/api/comparables/{args.uprn}/", params={"count": args.count})
+            data = await client.get(f"/comparables/{args.uprn}/", params={"count": args.count})
         elif cmd == "planning":
-            data = await client.get("/api/planning/search/", params={"uprn": args.uprn})
+            data = await client.get("/planning/search/", params={"uprn": args.uprn})
         elif cmd == "schools":
-            data = await client.get("/api/schools/", params={"uprn": args.uprn, "radius_m": args.radius})
+            data = await client.get("/schools/", params={"uprn": args.uprn, "radius_m": args.radius})
         elif cmd == "transport":
-            data = await client.get("/api/transport/", params={"uprn": args.uprn, "radius_m": args.radius})
+            data = await client.get("/transport/", params={"uprn": args.uprn, "radius_m": args.radius})
         elif cmd == "crime":
             params: dict[str, Any] = {"postcode": args.postcode}
             if args.date:
                 params["date"] = args.date
-            data = await client.get("/api/crime/", params=params)
+            data = await client.get("/crime/", params=params)
         elif cmd == "demographics":
-            data = await client.get("/api/demographics/", params={"postcode": args.postcode})
+            data = await client.get("/demographics/", params={"postcode": args.postcode})
         elif cmd == "broadband":
-            data = await client.get("/api/broadband/", params={"postcode": args.postcode})
+            data = await client.get("/broadband/", params={"postcode": args.postcode})
         elif cmd == "postcode":
-            data = await client.get("/api/postcode-profile/", params={"postcode": args.postcode})
+            data = await client.get("/postcode-profile/", params={"postcode": args.postcode})
         elif cmd == "search":
             params = {"q": args.query}
             if args.postcode:
                 params["postcode"] = args.postcode
-            data = await client.get("/api/address/find/", params=params)
+            data = await client.get("/address/find/", params=params)
         elif cmd == "batch":
-            data = await client.post("/api/property/batch/", json={"uprns": args.uprns})
+            data = await client.post("/property/batch/", json={"uprns": args.uprns})
         else:
             print(f"unknown command: {cmd}", file=sys.stderr)
             return 2

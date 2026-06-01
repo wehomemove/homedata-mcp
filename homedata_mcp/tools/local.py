@@ -19,7 +19,7 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             postcode: UK postcode (any common format, e.g. "SW1A 1AA" or "sw1a1aa").
         """
-        return await client.get("/api/demographics/", params={"postcode": postcode})
+        return await client.get("/demographics/", params={"postcode": postcode})
 
     @mcp.tool()
     async def get_crime(postcode: str, date: str | None = None) -> dict[str, Any]:
@@ -33,7 +33,7 @@ def register(mcp, client: HomedataClient) -> None:
         params: dict[str, Any] = {"postcode": postcode}
         if date:
             params["date"] = date
-        return await client.get("/api/crime/", params=params)
+        return await client.get("/crime/", params=params)
 
     @mcp.tool()
     async def get_schools(uprn: str, radius_m: int = 1000) -> dict[str, Any]:
@@ -47,7 +47,7 @@ def register(mcp, client: HomedataClient) -> None:
             radius_m: Search radius in metres. Defaults to 1000.
         """
         return await client.get(
-            "/api/schools/",
+            "/schools/",
             params={"uprn": uprn, "radius_m": radius_m},
         )
 
@@ -61,7 +61,7 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             postcode: UK postcode.
         """
-        return await client.get("/api/broadband/", params={"postcode": postcode})
+        return await client.get("/broadband/", params={"postcode": postcode})
 
     @mcp.tool()
     async def get_transport(uprn: str, radius_m: int = 800) -> dict[str, Any]:
@@ -73,6 +73,6 @@ def register(mcp, client: HomedataClient) -> None:
                 (roughly a 10-minute walk).
         """
         return await client.get(
-            "/api/transport/",
+            "/transport/",
             params={"uprn": uprn, "radius_m": radius_m},
         )

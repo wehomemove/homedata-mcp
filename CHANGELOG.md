@@ -5,6 +5,67 @@ All notable changes to `homedata-mcp` will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-01
+
+### Added — Property tier tools
+
+The new fixed-cost property tier endpoints get first-class MCP tools.
+One UPRN in, fixed depth out, fixed cost — pick the cheapest tier that
+covers what you need. Five new tools:
+
+- `discover_property(uprn)` — 1 call. The menu: which slugs are
+  populated for this UPRN, plus tier shortcut paths. Use this first to
+  avoid paying for a tier whose slugs aren't all present.
+- `lookup_property_address(uprn)` — 5 calls. Address + identifiers only.
+- `lookup_property_base(uprn)` — 10 calls. Address + rooms + EPC +
+  last sold + construction + dimensions + garden/parking + LR title.
+- `lookup_property_core(uprn)` — 25 calls. **Recommended starting tier.**
+  Base + council tax + flood + schools + broadband + crime + demographics
+  + amenities + planning summary + valuations + solar + lr_sales.
+- `lookup_property_complete(uprn)` — 50 calls. Core + comparables + live
+  listings + full risks + deprivation + planning history + price trends.
+
+`lookup_property` (legacy single-call /properties/{uprn}/) is preserved
+for backward compatibility but the tier tools above are now the
+recommended path.
+
+### Added — Council tax tools (endpoints went live 2026-05-29)
+
+Two new tools replace the 0.3.x "coming soon" stub:
+
+- `lookup_council_tax_band(uprn)` — 3 calls. Band letter + billing
+  authority. Cheap "just the band" lookup.
+- `lookup_council_tax(uprn)` — 5 calls. Full bundle: band + authority +
+  GSS code + country + yearly + monthly charge in £ + 1991 valuation
+  band bounds + fiscal year label. All 4 UK nations, refreshed nightly.
+
+The 0.3.x `lookup_council_tax` from `homedata_mcp.tools.risk` (which
+returned a 503 "in development" placeholder) is removed. Council tax
+tools moved to a dedicated `homedata_mcp.tools.council_tax` module.
+
+### Changed
+
+- **Endpoint paths no longer require the `/api/` prefix.** The Homedata
+  API now serves every endpoint at the host root in addition to the
+  legacy `/api/` prefix — e.g. `https://api.homedata.co.uk/properties/{uprn}/`
+  instead of `https://api.homedata.co.uk/api/properties/{uprn}/`. Both
+  URLs continue to work; this release switches the MCP client to the
+  cleaner naked-host form. No behaviour change visible to MCP consumers
+  — every tool returns the same response data, billing weight and call
+  semantics are identical.
+
+### Migration notes
+
+- Existing deployments pointed at `HOMEDATA_BASE_URL=https://api.homedata.co.uk`
+  keep working with no config change.
+- AI agents that have already written code against `lookup_property` will
+  keep working. New integrations should prefer the tier tools — fixed
+  cost, better discount per slug, single round-trip.
+- Self-hosted Homedata instances pinned to an older Loki build that
+  doesn't include the naked-host URLconf twin (Loki PR #102, 2026-06-01)
+  should stay on `homedata-mcp` 0.3.x until that PR lands on their
+  deployment.
+
 ## [0.3.0] - 2026-05-19
 
 ### Added

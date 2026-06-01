@@ -96,32 +96,53 @@ pointing `command` at `homedata-mcp` and put your key in `env`.
 All UPRN tools take a single 12-digit Unique Property Reference Number; all
 postcode tools accept any common UK postcode format.
 
-| # | Tool | Endpoint | Inputs |
-|---|------|----------|--------|
-| 1 | `lookup_property` | `GET /api/properties/{uprn}/` | `uprn` |
-| 2 | `lookup_epc` | `GET /api/epc-checker/{uprn}/` | `uprn` |
-| 3 | `lookup_flood_risk` | `GET /api/flood-risk/?uprn=` | `uprn` |
-| 4 | `lookup_council_tax` | _in development — returns a "coming soon" response_ | `uprn` |
-| 5 | `search_property_listings` | `GET /api/property_listings/?uprn=` | `uprn` |
-| 6 | `get_comparables` | `GET /api/comparables/{uprn}/?count=` | `uprn`, `count` (default 20, max 200) |
-| 7 | `get_planning_applications` | `GET /api/planning/search/?uprn=` | `uprn` |
-| 8 | `get_demographics` | `GET /api/demographics/?postcode=` | `postcode` |
-| 9 | `get_crime` | `GET /api/crime/?postcode=` | `postcode`, `date` (YYYY-MM, optional) |
-| 10 | `get_schools` | `GET /api/schools/?uprn=&radius_m=` | `uprn`, `radius_m` (default 1000) |
-| 11 | `get_broadband` | `GET /api/broadband/?postcode=` | `postcode` |
-| 12 | `get_transport` | `GET /api/transport/?uprn=&radius_m=` | `uprn`, `radius_m` (default 800) |
-| 13 | `get_postcode_profile` | `GET /api/postcode-profile/?postcode=` | `postcode` |
-| 14 | `search_address` | `GET /api/address/find/?q=` | `query`, `postcode` (optional) |
-| 15 | `get_property_sales` | `GET /api/property_sales/?uprn=` | `uprn` |
-| 16 | `batch_property_lookup` | `POST /api/property/batch/` | `uprns` (list, max 50) |
+### Property tiers — pick a depth
+
+One UPRN in, fixed cost out. Choose the cheapest tier that covers what
+you need; `discover_property` is the 1-call menu that tells you which
+slugs are populated before you commit.
+
+| Tool | Endpoint | Cost | What it returns |
+|------|----------|------|-----------------|
+| `discover_property` | `GET /property/{uprn}/` | 1 call | The menu — which slugs exist for this UPRN + tier shortcuts |
+| `lookup_property_address` | `GET /property/{uprn}/address` | 5 calls | Address + identifiers only |
+| `lookup_property_base` | `GET /property/{uprn}/base` | 10 calls | Address + rooms + EPC + last sold + construction + dimensions + garden + parking + LR title basics |
+| `lookup_property_core` ⭐ | `GET /property/{uprn}/core` | 25 calls | **Recommended.** Base + council tax + flood + schools + broadband + crime + demographics + amenities + planning summary + valuations + solar + lr_sales |
+| `lookup_property_complete` | `GET /property/{uprn}/complete` | 50 calls | Core + council tax full (£ charges) + comparables + live listings + full risks + deprivation + planning history + price trends |
+
+### Single-purpose lookups
+
+| Tool | Endpoint | Inputs |
+|------|----------|--------|
+| `lookup_property` | `GET /properties/{uprn}/` | `uprn` — legacy single-call detail; prefer the tier tools above |
+| `lookup_epc` | `GET /epc-checker/{uprn}/` | `uprn` |
+| `lookup_flood_risk` | `GET /flood-risk/?uprn=` | `uprn` |
+| `lookup_council_tax_band` | `GET /council_tax_band/{uprn}/` | `uprn` — band + authority, 3 calls |
+| `lookup_council_tax` | `GET /council_tax/{uprn}/` | `uprn` — band + authority + yearly/monthly £, 5 calls |
+| `search_property_listings` | `GET /property_listings/?uprn=` | `uprn` |
+| `get_comparables` | `GET /comparables/{uprn}/?count=` | `uprn`, `count` (default 20, max 200) |
+| `get_planning_applications` | `GET /planning/search/?uprn=` | `uprn` |
+| `get_demographics` | `GET /demographics/?postcode=` | `postcode` |
+| `get_crime` | `GET /crime/?postcode=` | `postcode`, `date` (YYYY-MM, optional) |
+| `get_schools` | `GET /schools/?uprn=&radius_m=` | `uprn`, `radius_m` (default 1000) |
+| `get_broadband` | `GET /broadband/?postcode=` | `postcode` |
+| `get_transport` | `GET /transport/?uprn=&radius_m=` | `uprn`, `radius_m` (default 800) |
+| `get_postcode_profile` | `GET /postcode-profile/?postcode=` | `postcode` |
+| `search_address` | `GET /address/find/?q=` | `query`, `postcode` (optional) |
+| `get_property_sales` | `GET /property_sales/?uprn=` | `uprn` |
+| `batch_property_lookup` | `POST /property/batch/` | `uprns` (list, max 50) |
 
 ### Typical workflow
 
 1. **Resolve text → UPRN** with `search_address`.
-2. Look up the property: `lookup_property`, `lookup_epc`,
-   `lookup_council_tax`, `lookup_flood_risk`.
-3. Add market context: `search_property_listings`, `get_property_sales`,
-   `get_comparables`.
+2. (Optional) `discover_property` to see what's available for the UPRN.
+3. **Pick a tier**: `lookup_property_core` is the recommended starting
+   point — one call gets you address, energy, statutory, area context
+   and valuations in a single response. Step down to `_base` if you
+   only need the basics; step up to `_complete` if you want comparables
+   and full risks too.
+4. For narrow follow-ups use the single-purpose tools (`lookup_council_tax`,
+   `lookup_flood_risk`, `get_planning_applications`, etc.).
 4. Add area context: `get_postcode_profile` (cheap one-shot), or call
    `get_demographics` / `get_crime` / `get_schools` / `get_broadband` /
    `get_transport` individually.

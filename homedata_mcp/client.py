@@ -53,7 +53,7 @@ class HomedataClient:
 
         client = HomedataClient.from_env()
         try:
-            data = await client.get("/api/epc-checker/10033544690/")
+            data = await client.get("/epc-checker/10033544690/")
         finally:
             await client.aclose()
     """

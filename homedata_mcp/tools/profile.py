@@ -19,4 +19,4 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             postcode: UK postcode.
         """
-        return await client.get("/api/postcode-profile/", params={"postcode": postcode})
+        return await client.get("/postcode-profile/", params={"postcode": postcode})

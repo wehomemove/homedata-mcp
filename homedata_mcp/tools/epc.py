@@ -19,4 +19,4 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             uprn: Unique Property Reference Number.
         """
-        return await client.get(f"/api/epc-checker/{uprn}/")
+        return await client.get(f"/epc-checker/{uprn}/")

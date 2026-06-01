@@ -137,7 +137,7 @@ def register(mcp, client: HomedataClient | None) -> None:
         # Try a cheap authenticated call — address search is the lightest endpoint
         try:
             test = await client.get(
-                "/api/address/find/",
+                "/address/find/",
                 params={"q": "10 Downing Street", "limit": 1},
             )
         except Exception as exc:  # pragma: no cover — network errors are env-specific

@@ -1,4 +1,8 @@
-"""Risk and statutory data tools (flood risk, council tax)."""
+"""Risk and statutory data tools — flood risk only.
+
+Council tax tools moved to `homedata_mcp.tools.council_tax` in v0.4.0
+once the endpoints went live (Loki PR #100, 2026-05-29).
+"""
 
 from __future__ import annotations
 
@@ -18,26 +22,4 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             uprn: Unique Property Reference Number.
         """
-        return await client.get("/api/flood-risk/", params={"uprn": uprn})
-
-    @mcp.tool()
-    async def lookup_council_tax(uprn: str) -> dict[str, Any]:
-        """Get the VOA council tax band (A-H) and billing authority for a UPRN.
-
-        NOTE: Council tax lookup is in development and not yet production-ready.
-        This tool returns a clear "coming soon" response without hitting the
-        API so callers do not consume credits on an unavailable endpoint.
-
-        Args:
-            uprn: Unique Property Reference Number.
-        """
-        return {
-            "error": "not_available",
-            "status_code": 503,
-            "detail": (
-                "Council tax band lookup is in development — see "
-                "https://homedata.co.uk/changelog for status. The tool will "
-                "start returning live data when the endpoint ships."
-            ),
-            "uprn": uprn,
-        }
+        return await client.get("/flood-risk/", params={"uprn": uprn})

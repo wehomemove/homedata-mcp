@@ -19,7 +19,7 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             uprn: Unique Property Reference Number.
         """
-        return await client.get("/api/property_listings/", params={"uprn": uprn})
+        return await client.get("/property_listings/", params={"uprn": uprn})
 
     @mcp.tool()
     async def get_property_sales(uprn: str) -> dict[str, Any]:
@@ -31,7 +31,7 @@ def register(mcp, client: HomedataClient) -> None:
         Args:
             uprn: Unique Property Reference Number.
         """
-        return await client.get("/api/property_sales/", params={"uprn": uprn})
+        return await client.get("/property_sales/", params={"uprn": uprn})
 
     @mcp.tool()
     async def get_comparables(
@@ -51,6 +51,6 @@ def register(mcp, client: HomedataClient) -> None:
             count: Number of comparables to return (default 20, max 200).
         """
         return await client.get(
-            f"/api/comparables/{uprn}/",
+            f"/comparables/{uprn}/",
             params={"count": count},
         )

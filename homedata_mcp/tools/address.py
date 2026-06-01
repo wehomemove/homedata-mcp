@@ -25,4 +25,4 @@ def register(mcp, client: HomedataClient) -> None:
         params: dict[str, Any] = {"q": query}
         if postcode:
             params["postcode"] = postcode
-        return await client.get("/api/address/find/", params=params)
+        return await client.get("/address/find/", params=params)

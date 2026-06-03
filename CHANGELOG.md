@@ -5,6 +5,67 @@ All notable changes to `homedata-mcp` will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-03
+
+### Changed
+
+- **`DEFAULT_TIMEOUT_SECONDS` bumped from 10.0 to 60.0.** The 10-second
+  default was too tight for the heavier endpoints — `get_postcode_profile`
+  fans out ~10 parallel server-side sub-queries, `get_comparables` runs
+  a cold PostGIS spatial scan, and a heavily-listed property in
+  `search_property_listings` can take a few seconds to assemble. The
+  Homedata API itself runs behind a 120s gunicorn worker timeout; the
+  prior 10s cap was a purely client-side limit that was causing
+  spurious timeouts on legitimate requests. New default gives realistic
+  headroom while still failing fast on genuinely hung calls.
+
+- Override per-client by passing `timeout=` to `HomedataClient(...)` —
+  e.g. drop it back to 10s if you need very tight SLOs and only call
+  the light tools.
+
+### Improved — tool docstring guidance
+
+Customers integrating via AI agents read the tool docstrings to pick
+which tool to use and how to handle errors. Updated four tool
+descriptions to embed performance and retry guidance directly:
+
+- **`get_postcode_profile`** — notes the fan-out behaviour, expected
+  timings (3-8s cold, <100ms cached for 24h), and documents the new
+  `partial: true` / `timed_out_keys` response fields that the upstream
+  Loki API returns when one sub-query misses its budget.
+
+- **`get_comparables`** — calls out the cold-PostGIS-scan latency
+  (5-10s first call, <100ms cached for 24h) and adds explicit retry
+  guidance: "wait ~5 seconds and retry — by then the upstream cache
+  has usually warmed."
+
+- **`search_property_listings`** — notes the per-property assembly
+  cost on long-history listings and that area-based search is on the
+  roadmap.
+
+- **`search_address`** — documents the matcher's query classifier
+  behaviour with explicit DO / AVOID examples. The "street name + full
+  postcode in one query string" pattern returns empty because the
+  matcher tightens to an exact-postcode lookup; recommends using the
+  dedicated `postcode=` parameter instead.
+
+- **`batch_property_lookup`** — documents the per-row response shape
+  (`found: true/false`, optional `error` field on transient per-row
+  failures) and explicitly states that "a missing or broken UPRN does
+  NOT 500 the whole batch" — so callers don't waste time pre-validating
+  every UPRN. Pairs with the Loki-side per-row error containment fix
+  shipping in `wehomemove/loki` PR #121.
+
+### Why this release
+
+Customer feedback 2026-06-03 (specific MCP integrator) flagged three
+real issues: heavy endpoints timing out at our 10s client default,
+`batch_property_lookup` apparently 500-ing on missing UPRNs (the Loki
+fix is in PR #121 — server now correctly returns 200 with `found:
+false` per row), and `search_address` returning empty for valid
+"street + postcode" combinations. This release closes the docstring/UX
+side of all three.
+
 ## [0.4.0] - 2026-06-01
 
 ### Added — Property tier tools

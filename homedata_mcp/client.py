@@ -15,7 +15,12 @@ import httpx
 from . import __version__
 
 DEFAULT_BASE_URL = "https://api.homedata.co.uk"
-DEFAULT_TIMEOUT_SECONDS = 10.0
+# Default HTTP timeout. Was 10.0 prior to v0.5.0 — too tight for the heavier
+# endpoints (postcode-profile fan-out, comparables spatial query, batch
+# property lookups). The Homedata API itself runs behind a 120s gunicorn
+# worker timeout and a ~300s DO proxy; the prior 10s cap was a
+# client-side limit only.
+DEFAULT_TIMEOUT_SECONDS = 60.0
 
 
 class HomedataError(RuntimeError):

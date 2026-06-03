@@ -139,6 +139,18 @@ def register(mcp, client: HomedataClient) -> None:
         Use this in preference to looping ``lookup_property`` when you have
         more than 2-3 UPRNs - it is significantly cheaper in API credits.
 
+        RESPONSE SHAPE: Returns one row per input UPRN, in input order.
+        Each row is either:
+          {"uprn": 12345, "found": true, "data": {...}}    — property exists
+          {"uprn": 12345, "found": false}                  — UPRN not in our base
+          {"uprn": 12345, "found": false, "error": "..."}  — known row, but the
+            data couldn't be assembled this time (transient; retry the
+            individual UPRN via lookup_property)
+
+        Crucially: **a missing or broken UPRN does NOT 500 the whole batch**.
+        You don't need to validate UPRNs before batching - send the lot
+        and inspect the per-row `found` flag.
+
         Args:
             uprns: List of UPRNs (each a 12-digit string). Capped at 50.
         """

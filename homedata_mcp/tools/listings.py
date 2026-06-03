@@ -16,6 +16,16 @@ def register(mcp, client: HomedataClient) -> None:
         date, and marketing description. Sourced from Home.co.uk's panel of
         portal partners (30+ years of data).
 
+        PERFORMANCE: Properties with long marketing histories (10+ years,
+        repeated listings, multiple agents) can take a few seconds to
+        assemble. If a request times out, retry once — most listings are
+        cached after first fetch.
+
+        COVERAGE: Currently per-UPRN only. For live listings by AREA
+        (postcode / outcode / town / drawn polygon), the underlying API
+        also supports `boundary_id` search, but that surface isn't yet
+        exposed as an MCP tool — coming in a future release.
+
         Args:
             uprn: Unique Property Reference Number.
         """
@@ -45,6 +55,16 @@ def register(mcp, client: HomedataClient) -> None:
         uses geographic proximity (PostGIS spatial query) rather than a fixed
         radius, and returns the ``count`` closest properties with either a
         sold date or a first-listing date in the past year.
+
+        PERFORMANCE: The first call for a given subject property involves a
+        cold PostGIS spatial scan over hundreds of nearby sales plus per-
+        comparable joins to listings and Land Registry titles. Typical
+        timings: 5-10 seconds cold; subsequent calls for the same UPRN +
+        filters return from cache in <100ms for 24 hours.
+
+        RETRY GUIDANCE: If you receive a timeout (5xx) on the first call,
+        wait ~5 seconds and retry — by then the upstream cache has usually
+        warmed and the second call returns in well under a second.
 
         Args:
             uprn: Unique Property Reference Number (the subject property).

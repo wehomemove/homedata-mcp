@@ -15,7 +15,9 @@ import httpx
 from . import __version__
 
 DEFAULT_BASE_URL = "https://api.homedata.co.uk"
-DEFAULT_TIMEOUT_SECONDS = 10.0
+# 30s — valuation/AVM/price-trend endpoints run live computation and can take
+# well over 10s. Overridable via the timeout constructor arg / HOMEDATA_TIMEOUT.
+DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
 class HomedataError(RuntimeError):

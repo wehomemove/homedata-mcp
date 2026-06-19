@@ -5,6 +5,63 @@ All notable changes to `homedata-mcp` will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-06-19
+
+### Added — broad endpoint coverage
+
+Wraps every remaining public Homedata endpoint as a first-class MCP tool.
+Grouped into four new modules:
+
+**`valuation`**
+- `estimate_valuation(uprn, type, ...)` — AVM sale/rent estimate with
+  confidence range (`/valuations/estimate/`).
+- `get_avm_comparables(uprn, count)` — the comparable set behind an AVM
+  estimate (`/avm/`).
+- `get_lr_sales(uprn?, sale?)` — HM Land Registry price-paid records
+  (`/lr-sales/`).
+
+**`area`**
+- `get_deprivation(postcode)` — IMD rank/decile + domain scores
+  (`/deprivation/`).
+- `get_conservation_areas(postcode, ...)` — `/conservation-areas/`.
+- `get_listed_buildings(postcode, ...)` — `/listed-buildings/`.
+- `get_planning_designations(postcode, ...)` — `/planning-designations/`.
+- `get_price_trends(outcode)` — `/price_trends/{outcode}/`.
+- `get_price_distribution(outcode)` — `/price_distributions/{outcode}/`.
+- `get_price_growth(outcode)` — `/price-growth/{outcode}/`.
+- `get_addresses_at_postcode(postcode)` — every address + UPRN at a
+  postcode (`/address/postcode/{postcode}/`).
+
+**`environment`**
+- `get_solar_assessment(uprn)` — rooftop solar PV potential
+  (`/solar-assessment/{uprn}/`).
+- `get_risks(risk_type, uprn)` — one named hazard in depth: noise, flood,
+  radon, landfill, coal_mining, invasive_plants, air_quality_today, or all
+  (`/risks/{risk_type}/`).
+- `get_energy(...)` — nearby energy infrastructure (`/energy/`).
+- `get_brownfield(...)` — brownfield land registers (`/brownfield/`).
+- `get_boreholes(...)` — BGS borehole logs (`/boreholes/`).
+- `get_environment_report(...)` — consolidated environmental summary
+  (`/environment-report/`).
+- `get_rights_of_way(...)` — public rights of way (`/rights-of-way/`).
+
+**`local_extra`**
+- `get_amenities(...)` — nearby POIs (`/amenities/`).
+- `get_fuel_stations(...)` — petrol/EV stations (`/fuel-stations/`).
+- `get_healthcare(...)` — GPs, hospitals, pharmacies (`/healthcare/`).
+- `get_agent_stats(uprn)` — estate-agent performance stats
+  (`/agent_stats/{uprn}/`).
+- `search_live_listings(...)` — filterable live on-market listings index
+  (`/live-listings/search/`).
+
+Spatial tools (`get_energy`, `get_brownfield`, `get_boreholes`,
+`get_environment_report`, `get_rights_of_way`, `get_amenities`,
+`get_fuel_stations`, `get_healthcare`) accept either a UPRN/title number
+anchor or raw lat/lng. Optional filters are omitted from the querystring
+when left unset.
+
+No behaviour change to existing tools.
+
 ## [0.4.0] - 2026-06-01
 
 ### Added — Property tier tools

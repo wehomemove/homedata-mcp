@@ -9,28 +9,36 @@ AI agent has a way to onboard a user before HOMEDATA_API_KEY is set.
 
 from . import (
     address,
+    area,
     council_tax,
+    environment,
     epc,
     listings,
     local,
+    local_extra,
     planning,
     profile,
     property,
     risk,
     signup,
+    valuation,
 )
 
 __all__ = [
     "address",
+    "area",
     "council_tax",
+    "environment",
     "epc",
     "listings",
     "local",
+    "local_extra",
     "planning",
     "profile",
     "property",
     "risk",
     "signup",
+    "valuation",
 ]
 
 
@@ -60,3 +68,7 @@ def register_all(mcp, client) -> None:
     local.register(mcp, client)
     address.register(mcp, client)
     profile.register(mcp, client)
+    valuation.register(mcp, client)
+    area.register(mcp, client)
+    environment.register(mcp, client)
+    local_extra.register(mcp, client)

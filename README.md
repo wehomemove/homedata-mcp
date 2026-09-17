@@ -1,221 +1,196 @@
-# Homedata MCP Server
+# Homedata MCP server
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes
-the [Homedata](https://homedata.co.uk) UK property data API as native tools for
-AI coding assistants - Claude Desktop, Claude Code, Cursor, and any other MCP
-client.
+UK property data as tools for AI assistants. Ask Claude, Cursor, Codex or any
+[Model Context Protocol](https://modelcontextprotocol.io) client about an
+address and it can look up the property record, EPC, council tax, flood and
+other environmental risks, planning, schools, broadband, crime, local
+amenities and area price trends through the [Homedata API](https://homedata.co.uk).
 
-29M UK addresses keyed by UPRN, with EPCs, sale history, planning, flood risk,
-council tax, demographics, crime, schools, broadband and transport - all
-queryable directly from your assistant chat.
-
-> Data is sourced from Home.co.uk's 30-year panel of partners, the Environment
-> Agency, ONS Census 2021, the Valuation Office Agency, Ofcom, Ofsted,
-> data.police.uk and HM Land Registry.
-
----
+The tools are exactly the self-serve endpoints of the
+[Homedata Developer Playground](https://homedata.co.uk/try): the same names,
+the same arguments and the same prices.
 
 ## Install
 
-Requires Python 3.10+.
+Requires Python 3.10 or newer.
 
 ```bash
 pip install homedata-mcp
 ```
 
-For local development from this repository:
+or run it without installing, with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-git clone https://github.com/wehomemove/homedata-mcp.git
-cd homedata-mcp
-pip install -e .
+uvx homedata-mcp
 ```
 
-You will need a Homedata API key. Sign up at
-[homedata.co.uk/developer](https://homedata.co.uk/developer) - the Free tier
-gives 100 calls / month with no card required.
+## Get an API key
 
-```bash
-export HOMEDATA_API_KEY=hd_live_xxx
-homedata-mcp --help
-```
+Create an account at [homedata.co.uk/register](https://homedata.co.uk/register),
+verify your email, and copy your key from the developer dashboard. Calls are
+paid for in tokens from a prepaid balance; see
+[homedata.co.uk/pricing](https://homedata.co.uk/pricing). Every tool's
+description states what it costs, and every call reports what it actually
+cost (see [What a call costs](#what-a-call-costs)).
 
----
+Without a key the server still starts, with two helpers,
+`start_homedata_signup` and `check_homedata_api_key`, so your assistant can
+walk you through getting one. Neither helper calls the API.
 
-## CLI
+## Connect it to your assistant
 
-The package also installs a `homedata` command — same data as the MCP
-server but for human shells, scripting, and CI. Useful for quick lookups,
-demos, and piping into other tools.
-
-```bash
-homedata property 100021421083
-homedata epc 100021421083 --field current_energy_efficiency
-homedata search "10 downing street" --postcode SW1A2AA
-homedata flood 100021421083 --compact
-homedata batch 100021421083 100022121211
-```
-
-Pass `--field <dotted.path>` to extract a single value (handy for shell
-pipelines) and `--compact` for single-line JSON. Reads the same
-`HOMEDATA_API_KEY` env var as the MCP server. Run `homedata --help` for
-the full list of subcommands.
-
----
-
-## Wire it into Claude Desktop
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`
-(macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Most clients take the same command, arguments and environment. For Claude
+Desktop, add this to `claude_desktop_config.json` and restart the app:
 
 ```json
 {
   "mcpServers": {
     "homedata": {
-      "command": "homedata-mcp",
-      "env": {
-        "HOMEDATA_API_KEY": "your_api_key_here"
-      }
+      "command": "uvx",
+      "args": ["homedata-mcp"],
+      "env": { "HOMEDATA_API_KEY": "your_key" }
     }
   }
 }
 ```
 
-Restart Claude Desktop. You should see the 16 Homedata tools appear in the
-tool picker.
+With `pip install homedata-mcp`, use `"command": "homedata-mcp"` and no `args`.
 
-### Cursor / Claude Code
+Claude Code:
 
-Both Cursor and Claude Code accept the same MCP server spec. Add an entry
-pointing `command` at `homedata-mcp` and put your key in `env`.
+```bash
+claude mcp add homedata --env HOMEDATA_API_KEY=your_key -- uvx homedata-mcp
+```
 
----
+Step-by-step guides for Claude Desktop, Claude Code, Cursor, Codex CLI,
+Windsurf, Cline, Continue.dev and Zed are at
+[homedata.co.uk/mcp](https://homedata.co.uk/mcp).
 
-## Tools
+## Using the tools
 
-All UPRN tools take a single 12-digit Unique Property Reference Number; all
-postcode tools accept any common UK postcode format.
+Start with `address_find` to turn an address into a UPRN, then use the
+property tools with that UPRN. For a whole property, one tier call is cheaper
+than many small ones: `property_base`, then `property_core` (the usual full
+picture), then `property_complete`. `property_discovery` costs 1 token and
+shows what a property has before you commit to a tier.
 
-### Property tiers — pick a depth
+<!-- BEGIN GENERATED: tools -->
+| Tool | Tokens | What it returns |
+|---|---|---|
+| `address_find` | 2 | Find UK addresses from free text: an address, a postcode or a place name. Returns matching addresses with their UPRN, which every property tool takes. |
+| `address_postcode` | 2 | List every registered address at a UK postcode, with the UPRN for each one. |
+| `amenities_all` | 5 | Every amenity group near a property in one response: food, education, healthcare, financial, civic, worship, culture, convenience, green spaces, transport and shops. |
+| `amenities_civic` | 1 | Civic places near a property: post offices, town halls, courthouses, fire and police stations, community centres. |
+| `amenities_convenience` | 1 | Everyday conveniences near a property: public toilets, charging points, parcel lockers and similar. |
+| `amenities_culture` | 1 | Culture and leisure near a property: theatres, cinemas, music venues, museums, galleries and attractions. |
+| `amenities_education` | 1 | Education near a property: schools, nurseries, colleges, universities, childcare and libraries. For Ofsted ratings and pupil numbers use schools. |
+| `amenities_financial` | 1 | Banks, cash machines and money services near a property. |
+| `amenities_food` | 1 | Places to eat and drink near a property: cafes, restaurants, pubs, bars, takeaways. |
+| `amenities_green_spaces` | 1 | Green space near a property: parks, playgrounds, gardens, nature reserves, commons and sports pitches. |
+| `amenities_healthcare` | 1 | Health services near a property as mapped locally: doctors, dentists, clinics, hospitals, pharmacies and care homes. For regulator-registered records use healthcare_all and its per-type tools. |
+| `amenities_shops` | 1 | Shops near a property, from supermarkets to specialist retailers. |
+| `amenities_transport` | 1 | Transport stops near a property: bus stops, railway stations, tram stops and ferry terminals. |
+| `amenities_worship` | 1 | Places of worship near a property. |
+| `attr_construction` | 1 | How a property was built: construction age band, main construction material, and whether it has a basement. |
+| `attr_dimensions` | 1 | Measurements for a property: footprint area in square metres, building height, estimated volume and predicted floor area. |
+| `attr_epc` | 1 | Energy Performance Certificate headline for a property: current and potential efficiency rating, EPC floor area and the date of the last assessment. |
+| `attr_epc_renovations` | 1 | Improvements recommended by a property's EPC assessment, each with estimated minimum and maximum cost. |
+| `attr_garden` | 1 | Whether a property has a garden, and of what kind. |
+| `attr_land` | 1 | Plot size in square metres for a property. Houses only: flats and maisonettes have no plot, and those return an error with nothing charged. |
+| `attr_parking` | 1 | Whether a property has parking, and of what kind: driveway, off-street, garage and so on. |
+| `attr_roof` | 1 | A property's roof: material, shape, and whether solar panels are fitted. |
+| `attr_rooms` | 1 | Room counts for a property: bedrooms, bathrooms, habitable rooms and heated rooms. |
+| `boundaries` | 1 | Search UK administrative areas by name and get their boundary id, for tools that take one. |
+| `broadband` | 1 | Broadband availability at a postcode: average and maximum download and upload speeds, superfast, ultrafast, gigabit and full-fibre coverage, and how many premises are covered. From Ofcom Connected Nations. |
+| `calc_mortgage` | free | Work out a mortgage from price, deposit, rate and term: monthly payment, total repayment, total interest, and loan-to-value and loan-to-income ratios. |
+| `calc_stamp_duty` | free | Work out Stamp Duty Land Tax for England and Northern Ireland: total tax, effective rate and a band-by-band breakdown, for a main residence, a first-time buyer or an additional property. |
+| `council_tax` | 3 | Council tax band for a property, with the billing authority name and its official code. For the yearly and monthly charge in pounds, use council_tax_full instead. |
+| `council_tax_full` | 5 | The full council tax record for a property: band, billing authority and its official code, this year's yearly and monthly charge in pounds, the 1991 valuation bounds behind the band, and the fiscal year. |
+| `crime` | 1 | Recorded crime near a postcode or coordinates, by category and month, from Police UK. |
+| `demographics` | 1 | Census 2021 profile for the area around a postcode: population, tenure, age bands, ethnicity, occupation, household size and car ownership, plus deprivation where available. |
+| `deprivation` | 1 | Index of Multiple Deprivation scores for a postcode, across income, employment, education, health, crime, housing and environment. England only. |
+| `fuel_stations_all` | 1 | Petrol stations and EV charging points near a property, each tagged with which it is. |
+| `fuel_stations_ev` | 1 | EV charging points near a property. |
+| `fuel_stations_petrol` | 1 | Petrol stations near a property. |
+| `healthcare_all` | 3 | Health services near a property: regulator-registered GPs, dentists and hospitals, plus pharmacies. Registered entries carry name, address, postcode, region, distance and a link to the official register record. Registered records cover England. |
+| `healthcare_dentists` | 1 | Registered dental practices near a property, with name, address, postcode, region, distance and a link to the official register record. England only. |
+| `healthcare_gps` | 1 | Registered GP practices near a property, with name, address, postcode, region, distance and a link to the official register record. England only. |
+| `healthcare_hospitals` | 1 | Registered hospitals near a property, with name, address, postcode, region, distance and a link to the official register record. England only. |
+| `healthcare_pharmacies` | 1 | Pharmacies near a property, with name, address, phone and website where known. |
+| `listed_buildings` | 3 | Listed buildings within a radius of a postcode: Grade I, II* and II entries with name, location, listing date and a link to the official record. |
+| `planning` | 5 | Planning applications near a postcode or coordinates: type, status, description and decision date, with filters for recency, type and status. |
+| `postcode_profile` | 1 | One-call summary of a postcode: deprivation, crime, average property price, nearby schools, transport and broadband. Cheaper than calling those tools separately. |
+| `price_distributions` | 1 | How property prices are spread across an outcode area: percentiles, median and transaction counts by property type. |
+| `price_growth` | 1 | Capital growth for an outcode area: annual growth rate, returns over one, three, five and ten years, and a historical price index, from Land Registry sold prices. |
+| `price_trends` | 1 | Average property prices over time for an outcode area. |
+| `property_address` | 5 | Address-only record for a property: full address, postcode, coordinates and the standard address identifiers. The cheapest property tier, for address verification, form pre-fill and matching. |
+| `property_base` | 10 | The house-hunter view of a property: address, rooms, EPC rating, last sale, construction, dimensions, garden, parking and title basics, in one call. |
+| `property_complete` | 50 | Everything held on a property in one call: the Core record plus the full council tax charge, full title, environmental risks, deprivation, planning history and area price trends. |
+| `property_core` | 25 | The full listing view of a property: everything in Base plus council tax band, flood risk, schools, broadband, crime, demographics, solar potential, confirmed sales and planning constraints. The usual starting point. |
+| `property_custom` | 1 + add-ons | Build your own property record: the base record plus only the add-ons you ask for, so you pay for exactly what you use. Call property_discovery first to see which add-ons a property has. |
+| `property_discovery` | 1 | The cheap first call for a property: which data is available for it, what each add-on costs, and the shortcuts to each tier. Also the quickest way to check whether a UPRN is one we hold. |
+| `property_lr_titles` | 10 | Land Registry title records for a property: tenure, title number and registered owner where held. |
+| `risks` | 1; 5 when `risk_type` is all | Environmental risk screening for a property: flood, radon, noise, landfill, coal and other mining, invasive plants and air quality. Ask for one hazard, or for all of them in a single response. |
+| `schools` | 1 | Schools near a postcode, with Ofsted rating, phase, pupil numbers and distance, from the Department for Education register. England only. |
+| `solar` | 5 | Solar potential for a property: usable roof area, estimated yearly generation, savings, payback period and carbon saved. |
+| `start_homedata_signup` | none | Get a Homedata API key so the property data tools can be used: returns the sign-up link and the steps to follow. Makes no API call. |
+| `check_homedata_api_key` | none | Check whether this server has a Homedata API key configured and what to do next if it has not. Makes no API call, so it never spends anything. |
+<!-- END GENERATED: tools -->
 
-One UPRN in, fixed cost out. Choose the cheapest tier that covers what
-you need; `discover_property` is the 1-call menu that tells you which
-slugs are populated before you commit.
+## What a call costs
 
-| Tool | Endpoint | Cost | What it returns |
-|------|----------|------|-----------------|
-| `discover_property` | `GET /property/{uprn}/` | 1 call | The menu — which slugs exist for this UPRN + tier shortcuts |
-| `lookup_property_address` | `GET /property/{uprn}/address` | 5 calls | Address + identifiers only |
-| `lookup_property_base` | `GET /property/{uprn}/base` | 10 calls | Address + rooms + EPC + last sold + construction + dimensions + garden + parking + LR title basics |
-| `lookup_property_core` ⭐ | `GET /property/{uprn}/core` | 25 calls | **Recommended.** Base + council tax + flood + schools + broadband + crime + demographics + amenities + planning summary + valuations + solar + lr_sales |
-| `lookup_property_complete` | `GET /property/{uprn}/complete` | 50 calls | Core + council tax full (£ charges) + comparables + live listings + full risks + deprivation + planning history + price trends |
+Each tool's description states its price in tokens. When the API reports what
+a call actually cost, the tool result carries it in its metadata:
 
-### Single-purpose lookups
+```json
+{ "homedata": { "tokens_charged": "25", "tokens_balance": "9975" } }
+```
 
-| Tool | Endpoint | Inputs |
-|------|----------|--------|
-| `lookup_property` | `GET /properties/{uprn}/` | `uprn` — legacy single-call detail; prefer the tier tools above |
-| `lookup_epc` | `GET /epc-checker/{uprn}/` | `uprn` |
-| `lookup_flood_risk` | `GET /flood-risk/?uprn=` | `uprn` |
-| `lookup_council_tax_band` | `GET /council_tax_band/{uprn}/` | `uprn` — band + authority, 3 calls |
-| `lookup_council_tax` | `GET /council_tax/{uprn}/` | `uprn` — band + authority + yearly/monthly £, 5 calls |
-| `search_property_listings` | `GET /property_listings/?uprn=` | `uprn` |
-| `get_comparables` | `GET /comparables/{uprn}/?count=` | `uprn`, `count` (default 20, max 200) |
-| `get_planning_applications` | `GET /planning/search/?uprn=` | `uprn` |
-| `get_demographics` | `GET /demographics/?postcode=` | `postcode` |
-| `get_crime` | `GET /crime/?postcode=` | `postcode`, `date` (YYYY-MM, optional) |
-| `get_schools` | `GET /schools/?uprn=&radius_m=` | `uprn`, `radius_m` (default 1000) |
-| `get_broadband` | `GET /broadband/?postcode=` | `postcode` |
-| `get_transport` | `GET /transport/?uprn=&radius_m=` | `uprn`, `radius_m` (default 800) |
-| `get_postcode_profile` | `GET /postcode-profile/?postcode=` | `postcode` |
-| `search_address` | `GET /address/find/?q=` | `query`, `postcode` (optional) |
-| `get_property_sales` | `GET /property_sales/?uprn=` | `uprn` |
-| `batch_property_lookup` | `POST /property/batch/` | `uprns` (list, max 50) |
+Arguments are checked before anything is sent: a call with a missing,
+malformed or unknown argument is refused by the server and never reaches the
+API.
 
-### Typical workflow
+## Command line
 
-1. **Resolve text → UPRN** with `search_address`.
-2. (Optional) `discover_property` to see what's available for the UPRN.
-3. **Pick a tier**: `lookup_property_core` is the recommended starting
-   point — one call gets you address, energy, statutory, area context
-   and valuations in a single response. Step down to `_base` if you
-   only need the basics; step up to `_complete` if you want comparables
-   and full risks too.
-4. For narrow follow-ups use the single-purpose tools (`lookup_council_tax`,
-   `lookup_flood_risk`, `get_planning_applications`, etc.).
-4. Add area context: `get_postcode_profile` (cheap one-shot), or call
-   `get_demographics` / `get_crime` / `get_schools` / `get_broadband` /
-   `get_transport` individually.
+The package also installs `homedata`, built from the same tool list:
 
----
+```bash
+homedata tools                                   # every tool and its price
+homedata address_find --q "10 Downing Street"
+homedata property_core --uprn 100023336956 --field epc
+homedata calc_mortgage --price 300000 --deposit 30000 --rate 4.5 --term-years 25
+```
+
+`--field <dotted.path>` prints one value, `--compact` prints one line of JSON,
+and the tokens a call cost are printed to stderr. The calculators are free and
+need no key.
 
 ## Configuration
 
-| Variable | Required | Default | Notes |
-|----------|----------|---------|-------|
-| `HOMEDATA_API_KEY` | yes | - | Your Homedata API key (`Authorization: Api-Key ...`). |
-| `HOMEDATA_BASE_URL` | no | `https://api.homedata.co.uk` | Override for staging or self-hosted. |
+| Variable | Required | Default |
+|---|---|---|
+| `HOMEDATA_API_KEY` | for everything except the calculators and the signup helpers | none |
+| `HOMEDATA_BASE_URL` | no | `https://api.homedata.co.uk` |
 
-Every tool returns either the parsed JSON body from the API, or
-`{"error": "...", "status_code": N, "detail": ...}` on failure - tools never
-raise exceptions out into the MCP protocol layer.
+## How the tool list is kept right
 
----
-
-## Pricing
-
-Calls made via this MCP server count against your Homedata API plan exactly
-the same as any other API call. Plans (as of writing):
-
-| Plan | Price | Calls / month |
-|------|-------|---------------|
-| Free | £0 | 100 |
-| Starter | £49 | 2,000 |
-| Growth | £149 | 10,000 |
-| Pro | £349 | 50,000 |
-| Scale | £699 | 250,000 |
-
-See [homedata.co.uk/pricing](https://homedata.co.uk/pricing) for the current
-list.
-
----
+`homedata_mcp/manifest/tools.json` is generated from the Developer Playground
+catalogue by `scripts/generate-manifest.mjs`, and every tool is built from it.
+The test suite fails if the server's tools, arguments, requests or stated
+prices differ from the manifest, and a weekly check fails if the Playground's
+public catalogue has moved on since the manifest was generated. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development
 
 ```bash
-pip install -e ".[dev]"
-HOMEDATA_API_KEY=hd_live_xxx pytest -v
+git clone https://github.com/wehomemove/homedata-mcp.git
+cd homedata-mcp
+python -m venv .venv && . .venv/bin/activate
+pip install -e '.[dev]'
+pytest
 ```
 
-Tests are skipped automatically when no API key is present, so the suite is
-safe to run in CI without secrets.
+## Licence
 
-### Project layout
-
-```
-homedata-mcp/
-  pyproject.toml
-  README.md
-  homedata_mcp/
-    __init__.py
-    server.py           # FastMCP server + CLI entry point
-    client.py           # httpx wrapper with auth + uniform error handling
-    tools/
-      __init__.py
-      property.py       # lookup_property, batch_property_lookup
-      epc.py            # lookup_epc
-      risk.py           # lookup_flood_risk, lookup_council_tax
-      listings.py       # search_property_listings, get_property_sales, get_comparables
-      planning.py       # get_planning_applications
-      local.py          # get_demographics, get_crime, get_schools, get_broadband, get_transport
-      address.py        # search_address
-      profile.py        # get_postcode_profile
-  tests/
-    test_tools.py
-```
-
----
-
-## License
-
-MIT - see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

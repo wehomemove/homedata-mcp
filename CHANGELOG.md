@@ -5,6 +5,62 @@ All notable changes to `homedata-mcp` will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - unreleased
+
+A rebuild. The tools are now exactly the self-serve endpoints of the Homedata
+Developer Playground, generated from its catalogue: 56 data tools plus the two
+signup helpers. This is a breaking release; the table below maps every 0.x tool.
+
+### Changed
+- Every tool is built from `homedata_mcp/manifest/tools.json`, generated from
+  the Playground catalogue. Names, arguments, requests and prices match the
+  Playground, and the test suite fails if they stop matching.
+- Prices are stated in tokens in every tool description, and each call reports
+  what it actually cost in the result metadata (`homedata.tokens_charged`).
+- Arguments are validated before a request is sent; an invalid call never
+  reaches the API.
+- `check_homedata_api_key` no longer calls the API. It used to call address
+  search to test the key, which cost 2 tokens on every check.
+- The `homedata` command is rebuilt on the same tool list:
+  `homedata <tool> --<argument> value`, and `homedata tools` lists prices.
+- Requires `fastmcp` 4.x. Default request timeout raised from 10s to 30s.
+
+### Migration from 0.x
+
+| 0.x tool | 1.0.0 |
+|---|---|
+| `search_address` | `address_find` (argument `q`; the `postcode` filter is gone) |
+| `discover_property` | `property_discovery` |
+| `lookup_property_address` | `property_address` |
+| `lookup_property_base` | `property_base` |
+| `lookup_property_core` | `property_core` |
+| `lookup_property_complete` | `property_complete` |
+| `lookup_property` | removed; use `property_base` or `property_core` |
+| `batch_property_lookup` | removed |
+| `lookup_epc` | `attr_epc` |
+| `lookup_flood_risk` | `risks` with `risk_type` `flood` |
+| `lookup_council_tax_band` | `council_tax` |
+| `lookup_council_tax` | `council_tax_full` |
+| `get_planning_applications` | `planning` (by `postcode` or `lat`/`lng`, not UPRN) |
+| `get_schools` | `schools` (by `postcode`, not UPRN) |
+| `get_transport` | `amenities_transport` |
+| `get_crime` | `crime` |
+| `get_demographics` | `demographics` |
+| `get_broadband` | `broadband` |
+| `get_postcode_profile` | `postcode_profile` |
+| `search_property_listings` | removed: listings are not offered through the MCP |
+| `get_property_sales` | removed: not offered through the MCP |
+| `get_comparables` | removed: not offered through the MCP |
+| `start_homedata_signup`, `check_homedata_api_key` | unchanged names |
+
+### Added
+New tools for every other Playground endpoint: property attributes (rooms,
+roof, garden, parking, dimensions, land, construction, EPC renovations),
+`property_custom`, `property_lr_titles`, `address_postcode`, `deprivation`,
+price trends, distributions and growth, `solar`, `listed_buildings`,
+amenities, fuel stations, healthcare, `boundaries`, and the stamp duty and
+mortgage calculators. The full list with prices is in the README.
+
 ## [0.4.0] - 2026-06-01
 
 ### Added — Property tier tools

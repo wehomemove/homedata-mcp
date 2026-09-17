@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "homedata-mcp"
-version = "0.4.0"
-description = "Model Context Protocol (MCP) server for the Homedata UK property data API - 29M UK addresses, EPC, planning, flood risk, demographics and more."
+version = "1.0.0"
+description = "MCP server and CLI for the Homedata UK property data API: addresses and UPRNs, EPC, council tax, planning, environmental risk, schools, broadband and more."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -32,7 +32,7 @@ keywords = [
   "ai-tools",
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: Information Technology",
@@ -50,8 +50,9 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "fastmcp>=0.2.0",
-  "httpx>=0.27",
+  # 4.x: the server subclasses fastmcp.tools.Tool and reads its 4.x client API.
+  "fastmcp>=4.0,<5",
+  "httpx>=0.27,<1",
 ]
 
 [project.optional-dependencies]
@@ -63,7 +64,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://homedata.co.uk"
+Homepage = "https://homedata.co.uk/mcp"
 Documentation = "https://homedata.co.uk/docs"
 API = "https://api.homedata.co.uk"
 Pricing = "https://homedata.co.uk/pricing"

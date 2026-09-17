@@ -80,7 +80,7 @@ include = ["homedata_mcp*"]
 exclude = ["tests*"]
 
 [tool.setuptools.package-data]
-homedata_mcp = ["py.typed"]
+homedata_mcp = ["py.typed", "manifest/*.json"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

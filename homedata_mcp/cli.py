@@ -1,14 +1,13 @@
-"""Command-line interface for Homedata.
+"""Command line interface for Homedata.
 
-Mirrors the MCP tool surface but for human-shell use. Designed for quick
-one-off lookups, demos, scripting, and CI workflows.
+Built from the same manifest as the MCP tools, so a command and its tool
+cannot drift apart: same names, same arguments, same requests, same prices.
 
-Reads ``HOMEDATA_API_KEY`` from the environment (the same key used by the
-MCP server). Output is pretty-printed JSON by default; pass ``--compact``
-for single-line output or ``--field <name>`` to extract a specific value
-for shell pipelines.
+    homedata tools                              list the tools and their prices
+    homedata address_find --q "10 Downing St"   run one
+    homedata property_core --uprn 100023336956 --field epc.current_rating
 
-Get a free API key at https://homedata.co.uk/developer.
+Reads HOMEDATA_API_KEY from the environment. The calculators need no key.
 """
 
 from __future__ import annotations
@@ -19,11 +18,20 @@ import json
 import sys
 from typing import Any
 
-from . import __version__
+from . import __version__, calls
 from .client import HomedataClient, HomedataError
 
 
-def _format_output(data: Any, compact: bool, field: str | None) -> str:
+def _price(tokens: dict[str, Any]) -> str:
+    if tokens.get("plus_with_addons"):
+        return f"{tokens['default']} + add-ons"
+    if tokens["default"] == 0:
+        return "free"
+    rules = "".join(f", {w['tokens']} when {w['param']}={'/'.join(w['in'])}" for w in tokens.get("when", []))
+    return f"{tokens['default']}{rules}"
+
+
+def _format(data: Any, compact: bool, field: str | None) -> str:
     if field:
         cursor: Any = data
         for part in field.split("."):
@@ -35,135 +43,82 @@ def _format_output(data: Any, compact: bool, field: str | None) -> str:
             return json.dumps(cursor, separators=(",", ":") if compact else (", ", ": "))
         return str(cursor)
     if compact:
-        return json.dumps(data, separators=(",", ":"))
+        return json.dumps(data, separators=(",", ":"), ensure_ascii=False)
     return json.dumps(data, indent=2, ensure_ascii=False)
 
 
-async def _run(args: argparse.Namespace) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="homedata", description=__doc__.splitlines()[0])
+    parser.add_argument("--version", action="version", version=f"homedata {__version__}")
+    subparsers = parser.add_subparsers(dest="command", required=True, metavar="<tool>")
+
+    listing = subparsers.add_parser("tools", help="list every tool with its token price")
+    listing.add_argument("--compact", action="store_true", help="one line of JSON")
+
+    for spec in calls.tools():
+        sub = subparsers.add_parser(
+            spec["name"],
+            help=f"{spec['label']} ({_price(spec['tokens'])} tokens)",
+            description=calls.description_for(spec["name"]),
+        )
+        help_text = calls.param_text_for(spec["name"])
+        for param in spec["params"]:
+            sub.add_argument(
+                f"--{param['name'].replace('_', '-')}",
+                dest=param["name"],
+                required=param["required"],
+                type=float if param["type"] == "number" else str,
+                choices=param.get("enum"),
+                # argparse treats % as a format directive in help strings.
+                help=help_text.get(param["name"], "").replace("%", "%%") or None,
+            )
+        sub.add_argument("--compact", action="store_true", help="one line of JSON")
+        sub.add_argument("--field", help="print one field, e.g. results.0.uprn")
+    return parser
+
+
+async def _run(spec: dict[str, Any], args: argparse.Namespace) -> int:
+    arguments = {p["name"]: getattr(args, p["name"]) for p in spec["params"]}
+    arguments = {k: v for k, v in arguments.items() if v is not None}
     try:
-        client = HomedataClient.from_env()
-    except HomedataError as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        request = calls.build_request(spec, arguments)
+    except calls.InvalidArguments as exc:
+        print(f"homedata: {exc}", file=sys.stderr)
         return 2
 
-    cmd = args.command
+    free = spec["tokens"]["default"] == 0 and not spec["tokens"].get("when")
     try:
-        if cmd == "property":
-            data = await client.get(f"/properties/{args.uprn}/")
-        elif cmd == "epc":
-            data = await client.get(f"/epc-checker/{args.uprn}/")
-        elif cmd == "flood":
-            data = await client.get("/flood-risk/", params={"uprn": args.uprn})
-        elif cmd == "sales":
-            data = await client.get("/property_sales/", params={"uprn": args.uprn})
-        elif cmd == "listings":
-            data = await client.get("/property_listings/", params={"uprn": args.uprn})
-        elif cmd == "comparables":
-            data = await client.get(f"/comparables/{args.uprn}/", params={"count": args.count})
-        elif cmd == "planning":
-            data = await client.get("/planning/search/", params={"uprn": args.uprn})
-        elif cmd == "schools":
-            data = await client.get("/schools/", params={"uprn": args.uprn, "radius_m": args.radius})
-        elif cmd == "transport":
-            data = await client.get("/transport/", params={"uprn": args.uprn, "radius_m": args.radius})
-        elif cmd == "crime":
-            params: dict[str, Any] = {"postcode": args.postcode}
-            if args.date:
-                params["date"] = args.date
-            data = await client.get("/crime/", params=params)
-        elif cmd == "demographics":
-            data = await client.get("/demographics/", params={"postcode": args.postcode})
-        elif cmd == "broadband":
-            data = await client.get("/broadband/", params={"postcode": args.postcode})
-        elif cmd == "postcode":
-            data = await client.get("/postcode-profile/", params={"postcode": args.postcode})
-        elif cmd == "search":
-            params = {"q": args.query}
-            if args.postcode:
-                params["postcode"] = args.postcode
-            data = await client.get("/address/find/", params=params)
-        elif cmd == "batch":
-            data = await client.post("/property/batch/", json={"uprns": args.uprns})
-        else:
-            print(f"unknown command: {cmd}", file=sys.stderr)
-            return 2
+        client = HomedataClient.from_env(allow_keyless=free)
+    except HomedataError as exc:
+        print(f"homedata: {exc}", file=sys.stderr)
+        return 2
+
+    try:
+        response = await client.send(request.method, request.path, params=request.query)
     finally:
         await client.aclose()
 
-    print(_format_output(data, args.compact, args.field))
-    if isinstance(data, dict) and data.get("error"):
-        return 1
-    return 0
-
-
-def _parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="homedata",
-        description="Homedata UK property data CLI — query 29M UK properties from your shell.",
-        epilog="Get a free API key at https://homedata.co.uk/developer. Set HOMEDATA_API_KEY before running.",
-    )
-    p.add_argument("--version", action="version", version=f"homedata {__version__}")
-
-    # Shared output flags accepted at top level OR after the subcommand.
-    common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--compact", action="store_true", help="Single-line JSON output (good for jq, pipes).")
-    common.add_argument("--field", metavar="PATH", help="Extract a single value by dotted path, e.g. --field current_energy_efficiency.")
-
-    # Also accept the flags before the subcommand for convenience.
-    p.add_argument("--compact", action="store_true", help=argparse.SUPPRESS)
-    p.add_argument("--field", metavar="PATH", help=argparse.SUPPRESS)
-
-    sub = p.add_subparsers(dest="command", required=True, metavar="COMMAND", parser_class=argparse.ArgumentParser)
-
-    for name, help_text, arg in [
-        ("property", "Look up a property by UPRN.", "uprn"),
-        ("epc", "Get the Energy Performance Certificate for a UPRN.", "uprn"),
-        ("flood", "Get flood risk for a UPRN.", "uprn"),
-        ("sales", "Get historical sales for a UPRN.", "uprn"),
-        ("listings", "Get listing events for a UPRN.", "uprn"),
-        ("planning", "Get planning applications near a UPRN.", "uprn"),
-    ]:
-        sp = sub.add_parser(name, help=help_text, parents=[common])
-        sp.add_argument(arg, help="UPRN (Unique Property Reference Number).")
-
-    sp = sub.add_parser("comparables", help="Get N nearest comparable properties for a UPRN.", parents=[common])
-    sp.add_argument("uprn")
-    sp.add_argument("--count", type=int, default=20, help="Number of comparables (1-200, default 20).")
-
-    for name, help_text in [
-        ("schools", "Get schools near a UPRN."),
-        ("transport", "Get transport options near a UPRN."),
-    ]:
-        sp = sub.add_parser(name, help=help_text, parents=[common])
-        sp.add_argument("uprn")
-        sp.add_argument("--radius", type=int, default=1000 if name == "schools" else 800, help="Search radius in metres.")
-
-    sp = sub.add_parser("crime", help="Get crime data for a postcode.", parents=[common])
-    sp.add_argument("postcode")
-    sp.add_argument("--date", help="Optional YYYY-MM month filter.")
-
-    for name, help_text in [
-        ("demographics", "Get demographic profile for a postcode."),
-        ("broadband", "Get broadband availability for a postcode."),
-        ("postcode", "Get a full postcode profile."),
-    ]:
-        sp = sub.add_parser(name, help=help_text, parents=[common])
-        sp.add_argument("postcode")
-
-    sp = sub.add_parser("search", help="Search for an address by free text.", parents=[common])
-    sp.add_argument("query", help="Address fragment, e.g. '10 downing street'.")
-    sp.add_argument("--postcode", help="Optional postcode hint to narrow the search.")
-
-    sp = sub.add_parser("batch", help="Look up multiple properties in one request.", parents=[common])
-    sp.add_argument("uprns", nargs="+", help="One or more UPRNs (max 50).")
-
-    return p
+    print(_format(response.body, args.compact, args.field))
+    charged = response.headers.get("X-Tokens-Charged")
+    if charged is not None:
+        balance = response.headers.get("X-Tokens-Balance")
+        print(f"tokens charged: {charged}" + (f" (balance {balance})" if balance else ""), file=sys.stderr)
+    return 0 if response.status_code < 400 else 1
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
-    return asyncio.run(_run(args))
+    args = build_parser().parse_args(argv)
+    if args.command == "tools":
+        listing = [
+            {"tool": spec["name"], "tokens": _price(spec["tokens"]), "description": calls.description_for(spec["name"])}
+            for spec in calls.tools()
+        ]
+        print(_format(listing, args.compact, None))
+        return 0
+    spec = calls.tool_by_name(args.command)
+    assert spec is not None  # argparse only accepts manifest tool names
+    return asyncio.run(_run(spec, args))
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

@@ -19,6 +19,7 @@ import pytest
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
+from homedata_mcp import __version__
 from homedata_mcp.manifest import load_manifest
 
 MANIFEST = load_manifest()
@@ -67,10 +68,8 @@ async def test_stdio_round_trip(fake_api, mode):
     # "legacy" is the classic initialize handshake most AI apps still use; the default lets
     # fastmcp negotiate the newer protocol. The server must work with both.
     async with Client(transport, **({"mode": mode} if mode else {})) as mcp:
-        if mode == "legacy":
-            assert mcp.initialize_result.server_info.name == "homedata"
-        else:
-            assert mcp.server_info.name == "homedata"
+        info = mcp.initialize_result.server_info if mode == "legacy" else mcp.server_info
+        assert (info.name, info.version) == ("homedata", __version__)
         assert mcp.instructions and "address_find" in mcp.instructions
 
         tools = await mcp.list_tools()

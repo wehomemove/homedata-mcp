@@ -51,7 +51,7 @@ def build_server(client: HomedataClient | None = None) -> tuple[FastMCP, Homedat
         except HomedataError:
             client = None  # signup-only mode
 
-    mcp = FastMCP(name="homedata", instructions=INSTRUCTIONS)
+    mcp = FastMCP(name="homedata", version=__version__, instructions=INSTRUCTIONS)
     signup.register(mcp, has_client=client is not None)
     if client is not None:
         for tool in build_tools(client):

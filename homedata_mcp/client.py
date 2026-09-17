@@ -8,6 +8,7 @@ client instance via ``HomedataClient.from_env()``.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from typing import Any, Mapping
 
 import httpx
@@ -15,11 +16,22 @@ import httpx
 from . import __version__
 
 DEFAULT_BASE_URL = "https://api.homedata.co.uk"
-DEFAULT_TIMEOUT_SECONDS = 10.0
+# The deepest property tiers assemble a lot of data; 10s was too tight for them.
+DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
 class HomedataError(RuntimeError):
     """Raised for client-side configuration errors (e.g. missing API key)."""
+
+
+@dataclass(frozen=True)
+class ApiResponse:
+    """One API response: what it said, and what it says it charged."""
+
+    status_code: int
+    body: Any
+    # httpx.Headers, not a plain dict: header lookup must stay case-insensitive.
+    headers: Mapping[str, str]
 
 
 def _normalise_response(resp: httpx.Response) -> dict[str, Any]:
@@ -64,8 +76,10 @@ class HomedataClient:
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
         transport: httpx.AsyncBaseTransport | None = None,
+        allow_keyless: bool = False,
     ) -> None:
-        if not api_key:
+        # allow_keyless is for the free calculators, which answer without a key.
+        if not api_key and not allow_keyless:
             raise HomedataError(
                 "HOMEDATA_API_KEY is required. Get a key at https://homedata.co.uk/developer"
             )
@@ -77,7 +91,7 @@ class HomedataClient:
             timeout=timeout,
             transport=transport,
             headers={
-                "Authorization": f"Api-Key {api_key}",
+                **({"Authorization": f"Api-Key {api_key}"} if api_key else {}),
                 "Accept": "application/json",
                 "User-Agent": f"homedata-mcp/{__version__}",
             },
@@ -88,13 +102,36 @@ class HomedataClient:
         cls,
         env_var: str = "HOMEDATA_API_KEY",
         base_url_env: str = "HOMEDATA_BASE_URL",
+        allow_keyless: bool = False,
     ) -> "HomedataClient":
         api_key = os.environ.get(env_var, "").strip()
         base_url = os.environ.get(base_url_env, "").strip() or DEFAULT_BASE_URL
-        return cls(api_key=api_key, base_url=base_url)
+        return cls(api_key=api_key, base_url=base_url, allow_keyless=allow_keyless)
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+    async def send(
+        self,
+        method: str,
+        path: str,
+        params: Mapping[str, Any] | None = None,
+        json: Mapping[str, Any] | None = None,
+    ) -> ApiResponse:
+        """Make one request and report status, body and headers.
+
+        Never raises for a failed call: an MCP client is better served by a
+        readable error body than by a transport exception.
+        """
+        clean = {k: v for k, v in (params or {}).items() if v is not None} or None
+        try:
+            resp = await self._client.request(method, path, params=clean, json=dict(json) if json else None)
+        except httpx.TimeoutException:
+            return ApiResponse(504, {"error": "timeout", "status_code": 504,
+                                     "detail": f"Homedata API did not respond within {self.timeout}s"}, httpx.Headers())
+        except httpx.HTTPError as exc:
+            return ApiResponse(0, {"error": "network_error", "status_code": 0, "detail": str(exc)}, httpx.Headers())
+        return ApiResponse(resp.status_code, _normalise_response(resp), resp.headers)
 
     async def get(
         self,

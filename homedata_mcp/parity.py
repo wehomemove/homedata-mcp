@@ -206,6 +206,8 @@ def sample_arguments(tool: Mapping[str, Any]) -> dict[str, Any]:
             args[p["name"]] = p["enum"][0]
         elif p["type"] == "number":
             args[p["name"]] = i + 2
+        elif p.get("pattern") == r"^\d+$":
+            args[p["name"]] = SAMPLE_VALUES.get(p["name"], str(i + 2))
         else:
             args[p["name"]] = SAMPLE_VALUES.get(p["name"], f"{p['name']}-sample")
     return args

@@ -39,6 +39,7 @@ async def record_requests(
 
     homedata = HomedataClient(api_key="parity-test", transport=httpx.MockTransport(handler))
     server = build_server(homedata)
+    server = server[0] if isinstance(server, tuple) else server
     recorded: dict[str, list[dict[str, Any]]] = {}
     try:
         async with Client(server) as client:

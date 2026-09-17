@@ -83,6 +83,21 @@ def test_changed_hash_alone_is_a_note_not_drift():
     assert drift == [] and note and "not drift" in note
 
 
+def test_qualified_free_price_is_not_free():
+    # "free" with a qualifier is a real price rule this parser must refuse to read as 0.
+    qualified = SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n- Weight: free for the first request, then 1 token\n")
+    with pytest.raises(check_drift.FormatError):
+        check_drift.compare(MANIFEST, qualified)
+
+
+def test_malformed_manifest_is_not_a_verdict(tmp_path):
+    bad = tmp_path / "manifest.json"
+    bad.write_text("{}")
+    good = tmp_path / "surface.txt"
+    good.write_text(SURFACE)
+    assert check_drift.main(["--file", str(good), "--manifest", str(bad)]) == 2
+
+
 @pytest.mark.parametrize("text", [
     "no generated block here",
     SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n- Weight: two tokens\n"),

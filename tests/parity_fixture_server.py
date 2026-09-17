@@ -17,7 +17,7 @@ from fastmcp.tools.tool_transform import ArgTransform
 from homedata_mcp.client import HomedataClient
 
 DESCRIPTIONS = {
-    "address_find": "Find UK addresses and their UPRNs from free text. Costs 2 tokens.",
+    "address_find": "Find UK addresses and their UPRNs from free text. Costs 3 tokens.",
     "calc_mortgage": "Monthly mortgage repayments. Free: no tokens spent.",
     "property_base": "Property — Base tier: rooms, EPC, last sale and more. Costs 10 tokens.",
     "property_custom": "Pick the property facts you need with add-ons. Costs 1 token plus each add-on (risks is 7 tokens).",

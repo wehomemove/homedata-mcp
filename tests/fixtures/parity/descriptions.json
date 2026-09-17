@@ -1,0 +1,8 @@
+{
+  "address_find": "Find UK addresses and their UPRNs from free text. Costs 2 tokens.",
+  "calc_mortgage": "Monthly mortgage repayments. Free: no tokens spent.",
+  "property_base": "Property — Base tier: rooms, EPC, last sale and more. Costs 10 tokens.",
+  "property_custom": "Pick the property facts you need with add-ons. Costs 1 token plus each add-on (risks is 7 tokens).",
+  "risks": "Environmental risk for a property. Costs 1 token; 5 tokens when risk_type is all.",
+  "start_homedata_signup": "Get a Homedata API key. Makes no API call."
+}

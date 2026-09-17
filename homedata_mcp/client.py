@@ -63,6 +63,7 @@ class HomedataClient:
         api_key: str,
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if not api_key:
             raise HomedataError(
@@ -74,6 +75,7 @@ class HomedataClient:
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=timeout,
+            transport=transport,
             headers={
                 "Authorization": f"Api-Key {api_key}",
                 "Accept": "application/json",

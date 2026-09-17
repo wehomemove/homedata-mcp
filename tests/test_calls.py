@@ -18,6 +18,14 @@ def test_path_parameters_are_substituted_and_encoded():
     assert (req.method, req.path, req.query) == ("GET", "/address/postcode/SW1A%202AA/", {})
 
 
+def test_a_path_parameter_cannot_escape_its_segment():
+    # A space proves little: an HTTP client may encode it on the way out either way.
+    # "/" and "#" are the ones that matter — unencoded they change the path and start
+    # a fragment, so the request goes somewhere else entirely.
+    req = calls.build_request(spec("address_postcode"), {"postcode": "A/B#C"})
+    assert req.path == "/address/postcode/A%2FB%23C/"
+
+
 def test_query_parameters_are_sent_by_their_manifest_names():
     req = calls.build_request(spec("risks"), {"risk_type": "all", "uprn": "100023336956"})
     assert req.path == "/risks/all/" and req.query == {"uprn": "100023336956"}

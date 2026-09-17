@@ -1,0 +1,394 @@
+<!-- BEGIN GENERATED: api-surface (source_hash: a13bdec5a7a2310094837195a4935cafb2874a09c04eb1f128acbe2eee59c561) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+## API Surface — All Endpoints
+
+Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
+
+### Property tiers — one UPRN in, fixed depth out, fixed cost
+
+**GET /property/{uprn}/address/**
+- Weight: 5 tokens
+- Purpose: Address fields only — full address, postcode, coordinates, USRN/TOID/UDPRN. Replaces /api/address/retrieve/. 5 tokens.
+- Params: `uprn` (required)
+
+**GET /property/{uprn}/base/**
+- Weight: 10 tokens
+- Purpose: House-shopper decision card — address + rooms + EPC + lr_title + last sold + construction + dimensions + garden/parking. Flat 10 tokens.
+- Params: `uprn` (required)
+
+**GET /property/{uprn}/core/**
+- Weight: 25 tokens
+- Purpose: Complete listing card — everything in Base + council tax band + flood + schools + broadband + crime + demographics + valuations + solar + lr_sales + title boundary + planning constraints (listed building / conservation area / designations). Flat 25 tokens.
+- Params: `uprn` (required)
+
+**GET /property/{uprn}/complete/**
+- Weight: 50 tokens
+- Purpose: Full property report — everything in Core + council tax FULL (GBP charges) + full title (ownership + boundary) + comparables + live listings + full environmental risks + deprivation + planning application history + price trends/distributions/growth. Flat 50 tokens.
+- Params: `uprn` (required)
+
+**GET /property/{uprn}/**
+- Weight: 1 token
+- Purpose: Discovery menu — what data is available for this UPRN, per-slug cost, and tier shortcut paths. 1 token. Doubles as a "is this UPRN known to us" check.
+- Params: `uprn` (required)
+
+**GET /property/{uprn}/**
+- Weight: 1 token for the base record plus the sum of the selected `?with=` add-ons (the Discovery menu lists each add-on's price)
+- Purpose: Pick-and-choose — 1 token for the property plus the weight of each slug you add. Same URL as Discovery, but supplying ?with=slug1,slug2 turns it into a custom chain. Pay only for what you ask for.
+- Params: `uprn` (required)
+
+### Property attributes
+
+Pick one fact about one UPRN — cheaper than a tier when you only need one field. Need several? Build your own ?with= chain.
+
+**GET /properties/{uprn}/rooms/**
+- Weight: 1 token
+- Purpose: Bedrooms, bathrooms, habitable rooms, heated rooms. 1 token.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/roof/**
+- Weight: 1 token
+- Purpose: Roof material, shape, and whether solar panels are present. 1 token.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/garden/**
+- Weight: 1 token
+- Purpose: Presence and type(s) of garden — rear, front, patio, etc. 1 token.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/parking/**
+- Weight: 1 token
+- Purpose: Presence and type(s) of parking — driveway, off-street, garage, etc. 1 token.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/dimensions/**
+- Weight: 1 token
+- Purpose: Geometry area (m²), building height, estimated volume, predicted floor area. 1 token.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/land/**
+- Weight: 1 token
+- Purpose: Land area (m²) for the property plot. Not available for flats/apartments/maisonettes — returns 400 with no call charged.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/construction/**
+- Weight: 1 token
+- Purpose: Construction age band, primary construction material, basement presence. 1 token.
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/epc/**
+- Weight: 1 token
+- Purpose: Energy Performance Certificate — current and potential energy efficiency rating, EPC floor area, and last inspection date. 1 token. Distinct from EPC Renovations (which returns the recommended works + costs).
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/epc_renovations/**
+- Weight: 1 token
+- Purpose: Recommended renovations from the EPC assessment with min / max cost estimates. 1 token.
+- Params: `uprn` (required)
+
+**GET /council_tax_band/{uprn}/**
+- Weight: 3 tokens
+- Purpose: Council tax band, billing authority name and GSS code. Light response — for yearly + monthly charge in GBP and the full bundle, use Council Tax. 3 tokens. England, Scotland and Wales.
+- Params: `uprn` (required)
+
+**GET /council_tax/{uprn}/**
+- Weight: 5 tokens
+- Purpose: Full council tax bundle for a UPRN: band, billing authority + GSS code, current-year yearly and monthly charge in GBP, 1991 valuation band bounds, fiscal year and source URL. 5 tokens. England, Scotland and Wales.
+- Params: `uprn` (required)
+
+**GET /property_lr_titles/{uprn}/**
+- Weight: 10 tokens
+- Purpose: Land Registry title records for a property — tenure (freehold/leasehold), registered owner, and title number.
+- Params: `uprn` (required)
+
+**GET /risks/{risk_type}/**
+- Weight: 1 token per hazard or flood layer; `all` is 5 tokens
+- Purpose: Environmental risk scores — flood, radon, noise, landfill, coal mining, invasive plants, air quality.
+- Params: `uprn` (optional); `lat` (optional, alternative to the previous param); `lng` (optional, alternative to the previous param)
+- `risk_type` values: `all`, `flood`, `radon`, `landfill`, `coal_mining`, `non_coal_mining`, `noise`, `air_quality_today`, `invasive_plants`. `all` returns every hazard row in one response.
+
+**GET /risks/flood/{layer}/** — the flood evidence family (canonical)
+- Layers: `zones`, `history`, `defences`, `storage-areas`, `warning-areas`, `reservoir`, `climate`
+- Weight: 1 token per layer
+- Params: `uprn` (one of), or `lat` + `lng` (one of, WGS84). UPRN wins if both are sent
+- Purpose: `/risks/flood/` is the headline risk band; the layers are the evidence behind it — planning flood zones 2 and 3 (undefended), recorded floods since 1703, defences with standard of protection, flood storage areas, EA warning and alert areas, reservoir failure extents, and 2080s climate projections (UKCP18 RCP8.5)
+- Every layer echoes a `query` block with `basis` (`title` = assessed against the whole Land Registry title polygon, `point` = the coordinate) and `in_coverage`
+- Coverage: England only (Environment Agency data). Outside England the response is still 200 with `in_coverage: false` and empty results — treat that as "not assessed", never "not at risk"
+- Aliases: the older `/flood-risk/…` and `/flood/…` spellings answer forever with a `Link: rel="canonical"` header pointing here, but are not documented
+
+**GET /solar-assessment/{uprn}/**
+- Weight: 5 tokens
+- Purpose: Solar PV potential for a property — roof area, estimated generation (kWh/yr), financial savings, payback period, and CO₂ offset.
+- Params: `uprn` (required)
+
+**GET /broadband/**
+- Weight: 1 token
+- Purpose: Ofcom Connected Nations broadband speed data for a UK postcode — avg/max download+upload speeds, superfast/ultrafast/gigabit/full-fibre coverage %, and premises count. 1 token.
+- Params: `postcode` (required)
+
+### Single property amenities
+
+What's near a property — three families, one UPRN, a radius you choose. Open a card for the whole bundle, or a category for one type.
+
+**GET /amenities/**
+- Weight: 5 tokens
+- Purpose: All 11 OSM amenity groups in one response — food, education, healthcare, financial, civic, worship, culture, convenience, green_spaces, transport, shops. 5 tokens.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/food/**
+- Weight: 1 token
+- Purpose: Cafes, restaurants, pubs, bars, fast food, ice cream, food courts, nightclubs, marketplaces. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/education/**
+- Weight: 1 token
+- Purpose: Schools, kindergartens, colleges, universities, childcare, libraries, music/language/driving/dance schools. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/healthcare/**
+- Weight: 1 token
+- Purpose: OSM-tagged healthcare — doctors, dentists, clinics, hospitals, pharmacies, veterinary, nursing homes. For CQC-authoritative records (registration ID, region, last-checked date, CQC URL), use the dedicated /healthcare/* endpoints. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/financial/**
+- Weight: 1 token
+- Purpose: Banks, ATMs, bureaux de change, money-transfer agents, payment centres. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/civic/**
+- Weight: 1 token
+- Purpose: Post offices, town halls, courthouses, fire stations, police, community centres, social facilities. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/worship/**
+- Weight: 1 token
+- Purpose: Places of worship — churches, mosques, synagogues, temples, gurdwaras. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/culture/**
+- Weight: 1 token
+- Purpose: Theatres, cinemas, arts centres, music venues, museums, galleries, attractions, viewpoints, theme parks, zoos. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/convenience/**
+- Weight: 1 token
+- Purpose: Public toilets, charging stations, parcel lockers, internet cafes, animal boarding, give-boxes. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/green_spaces/**
+- Weight: 1 token
+- Purpose: Parks, playgrounds, gardens, nature reserves, commons, sports pitches. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/transport/**
+- Weight: 1 token
+- Purpose: OSM-side transit — bus stops, ferry terminals, railway stations + halts, tram stops, public-transport platforms. Companion to the NaPTAN-authoritative /transport/ endpoint. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /amenities/shops/**
+- Weight: 1 token
+- Purpose: Every OSM-tagged shop — supermarket, clothing, bakery, hardware, convenience, books, the lot. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /fuel-stations/**
+- Weight: 1 token
+- Purpose: Petrol stations and EV charging points in one response, each result tagged with its `type`. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /fuel-stations/petrol/**
+- Weight: 1 token
+- Purpose: Petrol stations only — OSM amenity=fuel. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /fuel-stations/ev/**
+- Weight: 1 token
+- Purpose: EV charging points only — OSM amenity=charging_station. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /healthcare/**
+- Weight: 3 tokens
+- Purpose: CQC-registered GPs, dentists and hospitals plus OSM-tagged pharmacies in one response. CQC entries carry name, address, postcode, region, distance and CQC location URL, with phone, website and last-checked date wherever the register holds them. CQC covers England only; the pharmacy layer is OpenStreetMap and UK-wide. Refreshed monthly. 3 tokens.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /healthcare/gps/**
+- Weight: 1 token
+- Purpose: CQC-registered GP practices, straight from the Care Quality Commission register and refreshed monthly. Every entry carries name, address, postcode, region, straight-line distance and its CQC location URL; phone, website and the register's last-checked date arrive wherever CQC holds them, phone numbers without the leading 0. England only — CQC's remit, so Scotland, Wales and Northern Ireland have their own regulators and are not in this feed. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /healthcare/dentists/**
+- Weight: 1 token
+- Purpose: CQC-registered dental practices, straight from the Care Quality Commission register and refreshed monthly. Every entry carries name, address, postcode, region, straight-line distance and its CQC location URL; phone, website and the register's last-checked date arrive wherever CQC holds them, phone numbers without the leading 0. England only — CQC's remit, so Scotland, Wales and Northern Ireland have their own regulators and are not in this feed. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /healthcare/pharmacies/**
+- Weight: 1 token
+- Purpose: Pharmacies near a property — OpenStreetMap shop=pharmacy (CQC doesn't regulate pharmacies — General Pharmaceutical Council remit). Includes name, address, phone, website from OSM tags where present. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+**GET /healthcare/hospitals/**
+- Weight: 1 token
+- Purpose: CQC-registered hospitals, straight from the Care Quality Commission register and refreshed monthly. Every entry carries name, address, postcode, region, straight-line distance and its CQC location URL; phone, website and the register's last-checked date arrive wherever CQC holds them, phone numbers without the leading 0. England only — CQC's remit, so Scotland, Wales and Northern Ireland have their own regulators and are not in this feed. 1 token.
+- Params: `uprn` (required); `radius_km` (optional)
+
+### Area
+
+Postcode, outcode or boundary-level stats — prices, demographics, amenities, heritage.
+
+**GET /boundaries/autocomplete/**
+- Weight: 1 token
+- Purpose: Search UK administrative boundaries by name — returns boundary IDs for use with the Live Listings endpoint. 1 token per request.
+- Params: `q` (required)
+
+**GET /price_trends/{outcode}/**
+- Weight: 1 token
+- Purpose: Average property prices over time for an outcode area (e.g. SW1A, E1, M1).
+- Params: `outcode` (required)
+
+**GET /price_distributions/{outcode}/**
+- Weight: 1 token
+- Purpose: Property price distribution for an outcode — percentiles, median, and count by property type.
+- Params: `outcode` (required)
+
+**GET /price-growth/{outcode}/**
+- Weight: 1 token
+- Purpose: Capital appreciation data for an outcode area — annual growth rate, 1Y/3Y/5Y/10Y returns, and historical price index. Computed from Land Registry sold price transactions.
+- Params: `outcode` (required)
+
+**GET /postcode-profile/**
+- Weight: 1 token
+- Purpose: All-in-one postcode summary in a single call — deprivation index, crime rate, average property price, school count, transport links, and broadband speed. Replaces 5+ separate endpoint calls.
+- Params: `postcode` (required)
+
+**GET /deprivation/**
+- Weight: 1 token
+- Purpose: Index of Multiple Deprivation scores — income, employment, education, health, crime, housing, environment.
+- Params: `postcode` (required)
+
+**GET /demographics/**
+- Weight: 1 token
+- Purpose: ONS Census 2021 demographics resolved to the postcode's MSOA (middle-layer super output area, ~7,500 residents). Returns population, tenure breakdown (owned / mortgage / social / private rented / rent-free), age bands, ethnicity, occupation, household size, car ownership, plus MHCLG IMD 2019 deprivation if available. Area codes (LSOA + MSOA + local authority) are in the response so you can link to other ONS datasets.
+- Params: `postcode` (required)
+
+**GET /schools/nearby**
+- Weight: 1 token
+- Purpose: Find schools near a postcode — Ofsted ratings, phase, pupil numbers, and distance. ~27,000 open schools in England from the DfE GIAS register.
+- Params: `postcode` (required); `radius` (optional); `phase` (optional, advanced); `ofsted` (optional, advanced); `limit` (optional, advanced)
+
+**GET /planning/search/**
+- Weight: 5 tokens
+- Purpose: National planning applications near a location — type, status, description, and decision date. 300+ LPAs via PlanIt. Use postcode or lat/lng.
+- Params: `postcode` (optional); `lat` (optional, alternative to the previous param); `lng` (optional, alternative to the previous param); `radius_km` (optional, advanced); `days` (optional, advanced); `type` (optional, advanced); `status` (optional, advanced)
+
+**GET /crime/**
+- Weight: 1 token
+- Purpose: Crime statistics near a location — 14 categories sourced from Police UK. Monthly counts and category breakdown. Use postcode or lat/lng.
+- Params: `postcode` (optional); `lat` (optional, alternative to the previous param); `lng` (optional, alternative to the previous param); `date` (optional, advanced); `category` (optional, advanced)
+
+**GET /listed-buildings/**
+- Weight: 3 tokens
+- Purpose: Historic England listed buildings within a radius of a UK postcode. Returns Grade I / II* / II entries with name, location, list date, and a hyperlink back to the official Historic England record.
+- Params: `postcode` (required); `radius_km` (optional, advanced); `grade` (optional, advanced)
+
+### Tools
+
+Free calculators — no tokens spent. Use them anywhere.
+
+**GET /calculators/stamp-duty/**
+- Weight: free — no tokens spent
+- Purpose: Calculate UK Stamp Duty Land Tax (SDLT) for England and Northern Ireland. Returns total tax, effective rate, and a band-by-band breakdown for standard, first-time, or additional-dwelling buyers. Free endpoint — counts zero against your quota.
+- Params: `price` (required); `buyer_type` (required); `country` (optional, advanced)
+
+**GET /calculators/mortgage/**
+- Weight: free — no tokens spent
+- Purpose: Mortgage repayment calculator — given price + deposit + rate + term, returns monthly payment, total repayment, total interest, LTV and LTI ratios. Free endpoint — counts zero against your quota.
+- Params: `price` (required); `deposit` (required); `rate` (required); `term_years` (required)
+
+### Address lookup
+
+Find an address — by query, postcode, or building.
+
+**GET /address/find/**
+- Weight: 2 tokens
+- Purpose: Search for UK addresses by query string. Returns the raw numeric uprn (a public OS AddressBase id) plus an encrypted uprn_token — either works in any {uprn} endpoint. Costs 2 tokens (weighted billing).
+- Params: `q` (required)
+
+**GET /address/postcode/{postcode}/**
+- Weight: 2 tokens
+- Purpose: All registered addresses at a postcode. Returns address list with UPRNs. Costs 2 tokens (weighted billing).
+- Params: `postcode` (required)
+
+### Enterprise — arranged directly (not self-serve)
+
+Enterprise products, scoped and priced per customer. They are not part of the self-serve surface and do not spend tokens from your balance. Do not infer paths or parameters for them — the team agrees coverage, cadence, SLA and price directly. Register interest at https://homedata.co.uk/try.
+
+**All Property Listings** — on request
+- Purpose: Thirty years of listing history for one property — what it asked, how often that was cut, and whether it sold or quietly came off.
+- Example (illustrative values): Last asking price £325,000; First listed: 30 September 2019; Left the market: Withdrawn; Days on market: 2,537; Price reductions: None; Property: 3 bed detached
+- Example response shape: `{"count":1,"results":[{"id":"7f9200c5-93be-487a-befa-26aa8667b3e4","street":"Mayfield Park North Fishponds BS16","postcode":"BS16 3NJ","transaction_type":"Sale","latest_price":325000,"bedrooms":3,"bathrooms":1,"reception_rooms":1,"property_type":"Detached","is_reduced":false,"times_reduced":0,"is_withdrawn":true,"days_on_market":2537,"added_date":"2019-09-30"}]}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=property-listings
+
+**Sale Events** — on request
+- Purpose: The negotiation behind the headline price — every price move, offer and withdrawal, dated.
+- Example (illustrative values): Events on record 3; 30 September 2019: Added; 7 October 2019: Sold STC; 30 March 2020: Withdrawn
+- Example response shape: `{"count":3,"results":[{"id":53472,"listing":"7f9200c5-93be-487a-befa-26aa8667b3e4","event_type":"Withdrawn","date":"2020-03-30","price":325000},{"id":53471,"listing":"7f9200c5-93be-487a-befa-26aa8667b3e4","event_type":"Sold STC","date":"2019-10-07","price":325000},{"id":53470,"listing":"7f9200c5-93be-487a-befa-26aa8667b3e4","event_type":"Added","date":"2019-09-30","price":325000}]}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=property-sale-events
+
+**Land Registry Sales** — on request
+- Purpose: What actually changed hands, not what was asked — every HM Land Registry confirmed completion, with the date and the real price.
+- Example (illustrative values): Price paid £310,000; Completion date: 9 April 2020; Against the asking price: £15,000 below; Land Registry txid: A96E4ACB-DBFE-9205-E053-6C04A8C0DA09
+- Example response shape: `{"uprn":61263,"count":1,"sales":[{"txid":"A96E4ACB-DBFE-9205-E053-6C04A8C0DA09","sold_let_date":"2020-04-09","sold_let_price":310000,"transaction_type":"Sale"}]}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=lr-sales
+
+**Comparables** — on request
+- Purpose: The evidence a valuation stands on — like-for-like sold comparables, time-adjusted to today and ranked by how closely they match.
+- Example (illustrative values): Adjusted median £408,000; 8 Orchard Lane · 0.05 mi: Detached · 3 bed · 121 m²; 24 Windsor Road · 0.18 mi: Detached · 3 bed · 114 m²; 3 Kendrick Close · 0.27 mi: Detached · 3 bed · 119 m²; 17 Alexandra Road · 0.31 mi: Detached · 4 bed · 132 m²; Market adjustment: Reading RG1 index, +1.8% since February
+- Example response shape: `{"uprn":100023336956,"matched":12,"adjusted_median":408000,"range":{"low":392000,"high":427500},"radius_miles":0.4,"window_months":9,"comparables":[{"address":"8 Orchard Lane","distance_miles":0.05,"property_type":"Detached","bedrooms":3,"floor_area_m2":121,"sold_price":415000,"sold_date":"2026-06-14","adjusted_price":415000}],"index":{"area":"RG1","change_pct":1.8,"since":"2026-02"}}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=comparables
+
+**Search live listings** — on request
+- Purpose: Live UK listings on sale or to let, filtered down to the properties worth calling.
+- Example (illustrative values): Listings matched 10,000+; Terraced · 3 bed · added today: Mayfield Park North, BS16 3NJ; Detached · 2 bed · added today: Cavendish Road, BA1 2UD; Detached · 3 bed · added today: Elmdon Lane, B37 7EQ; Filter on: Reductions, days on market, EPC band, floor area, garden, parking
+- Example response shape: `{"count":10000,"page":1,"page_size":3,"total_pages":3334,"results":[{"id":"c61d5383-1214-4e6f-b63c-1153863bc50f","street":"Mayfield Park North","postcode":"BS16 3NJ","transaction_type":"Sale","latest_status":"For sale","latest_price":385000,"bedrooms":3,"bathrooms":1,"property_type":"Terraced","ownership":"Freehold","is_new_build":false,"is_reduced":false,"times_reduced":0,"days_on_market":0,"added_date":"2026-09-10"}]}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=live-listings
+
+**Unlock UPRN + Address** — on request
+- Purpose: Turn a listing into a real address — the full postal address and the whole sale history, ready to act on.
+- Example (illustrative values): Returns UPRN + address + timeline; You send: listing_id; You get: The full postal address; You get: The UPRN; You get: The full event timeline; Already revealed: Free
+- Example response shape: `{"listing_id":"<id from any Live Listings result>","uprn":100023336956,"full_address":"10 Downing Street, London SW1A 2AA","charged":true}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=listing-address
+
+**Flood risk expert** — on request
+- Purpose: Everything the Environment Agency knows about flooding at one address — seven layers behind the headline band, 1703 to the 2080s. England only.
+- Example (illustrative values): Flood outlines within 250 m 10+; Screening band: Surface water — Low; Planning zone 3: Outside; Planning zone 2: Outside; Recorded floods: Five episodes in the ten nearest outlines; Defences: None within 250 m; Storage areas: Not inside one; Warning and alert areas: Inside neither; Reservoir failure: Inside the extent; Climate 2080s: In the extreme river extent
+- Example response shape: `{"query":{"uprn":100120547768,"country":"England","coverage":["England"],"in_coverage":true,"basis":"title"},"band":{"risk_type":"flood_surface_water","label":"Low","score":2,"score_unit":"band","description":"Between 1 in 1,000 and 1 in 100 chance of flooding each year","confidence":3},"zones":{"source":"EA Flood Map for Planning (undefended fluvial/tidal)","flood_zone_3":{"inside":false,"nearest_m":104.7},"flood_zone_2":{"inside":false,"nearest_m":42.3}},"history":{"source":"EA Recorded Flood Outlines (1703-present)","has_flooded":true,"events_within_250m":[{"name":"March-1947  River Severn","flood_source":"main river","flood_cause":"channel capacity exceeded (no raised defences)","start_date":"1947-03-07","end_date":"1947-04-04","distance_m":0},{"name":"River Swilgate 006 (July 07)","flood_source":"main river","flood_cause":"channel capacity exceeded (no raised defences)","start_date":"2007-07-20","end_date":"2007-07-24","distance_m":43.4}]},"defences":{"source":"EA Spatial Flood Defences","count_within_250m":0,"defences":[]},"storage-areas":{"source":"EA Flood Storage Areas","inside":false,"nearest_m":null},"warning-areas":{"source":"EA Flood Warning and Alert Areas","warning_area":{"inside":false},"alert_area":{"inside":false}},"reservoir":{"source":"EA Reservoir Flood Extents (wet-day worst case)","inside":true,"reservoir":"Cheltenham Racecourse","operator":"The Steeplechase Company (Cheltenham) Ltd","risk_designation":"High-risk"},"climate":{"source":"EA climate-change flood projections (CCP1)","epoch":"2080s (2070-2125)","scenario":"UKCP18 RCP8.5 (high emissions)","river":{"high":{"defended":false,"undefended":false},"extreme":{"defended":true,"undefended":true}},"sea":{"high":{"defended":false,"undefended":false},"extreme":{"defended":false,"undefended":false}}}}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=premium-flood-expert
+
+**Plot intelligence** — on request
+- Purpose: What the plot actually contains — garden size and aspect, whether a car fits on the drive, and whether it has already been extended. Measured, not guessed.
+- Example (illustrative values): Private garden 138 m²; Extension: Rear, 14 m²; Evidence: Extra building part, lower eaves, off-archetype, approved application; Garden: 138 m² · widest circle 7.4 m; Sun on the garden: 6.2 hrs midsummer; Driveway: 41 m² a car can reach; Way in: 3.1 m gap in the frontage
+- Example response shape: `{"uprn":100023336956,"extension":{"detected":true,"area_m2":14,"position":"rear","signals":["extra_building_part","eaves_step_down","off_cohort_archetype","approved_application"],"confidence":"high"},"extents":{"title_m2":604,"boundary_basis":"HMLR general boundaries — indicative, screening tolerance","built_m2":96,"private_amenity_m2":138,"shared_m2":0},"garden":{"area_m2":138,"inscribed_circle_m":7.4,"aspect":"south_west","direct_sun_hours_midsummer":6.2},"parking":{"drivable_area_m2":41,"independent_bays":2,"tandem_bays":1,"opening_width_m":3.1,"crossing_consent":"not_verified"},"confidence":{"band":"high","abstained":[]}}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=premium-plot-intelligence
+
+**Development suitability** — on request
+- Purpose: Whether a plot carries a garden room, an annexe or several houses — tested by placing them, not by dividing the area. When it does not fit, you get the reason. A screening indicator, never a promise of consent.
+- Example (illustrative values): Screening clears 2 extra homes; Garden room or outbuilding: Yes; Annexe: Yes; Extension: Rear, side or loft; One extra house: Yes; Two extra houses: Yes; Three extra houses: No; Consent base rate, same council: 61% granted
+- Example response shape: `{"title_number":"BK123456","plot_area_m2":604,"development_potential":"high","supports":{"garden_room":true,"annexe":true,"extension":["rear","side","loft"],"extra_dwellings":2},"why_not_three":{"binding_constraint":"access","would_need":"3.3 m easement across the northern boundary"},"each_dwelling_cleared":{"envelope_m2":186,"min_width_m":9,"separation_m":6,"access_route_m":3.4,"parking_spaces":2},"site":{"slope_deg":2.1,"land_type":"brownfield","designations":[],"street_approvals_last_15_years":4},"grant_rate":{"cohort":"same council, infill dwelling, post-2010","decided":148,"granted":91,"rate":0.61,"confidence_interval_95":[0.53,0.69]},"note":"Desk-based screening indicator. Subject to planning."}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=premium-development-suitability
+
+**Lender-grade AVM** — on request
+- Purpose: A valuation you can put in front of a credit committee — a point estimate, a stated confidence band, and what each attribute is actually worth.
+- Example (illustrative values): Estimated value £412,500; Floor area: 118 m² · 3 bed; Garden: 92 m² · south-facing; EPC rating: C (72); Parking: Driveway · 2 cars; Flood risk: Very low; Construction: 1930s · solid brick
+- Example response shape: `{"uprn":100023336956,"estimate":412500,"range":{"low":389000,"high":436000},"confidence":84,"forecast_sd_pct":5.7,"attributes":{"floor_area_m2":{"value":118,"vs_area_pct":8.2},"garden_m2":{"value":92,"vs_area_pct":3.4},"epc":{"value":"C","vs_area_pct":2.1},"parking":{"value":"driveway","vs_area_pct":1.6},"flood_risk":{"value":"very_low","vs_area_pct":0},"construction":{"value":"1930s_solid_brick","vs_area_pct":-2.3}},"estimated_at":"2026-09-09"}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=premium-lender-avm
+
+**Subsidence risk** — on request
+- Purpose: Why the ground moves here — the clay, the tree next to the wall, and the mine workings underneath, each with the check that settles it.
+- Example (illustrative values): Susceptibility Moderate — band 2 of 3; Shrink–swell: Class 2 of 3; Nearest tree: Lone canopy 8 m from the wall; Mine workings: Moderate; Coal reporting area: Outside; Building era: 1930s; Claims history: Not held
+- Example response shape: `{"uprn":100023336956,"band":"moderate","band_index":2,"band_count":3,"factors":{"shrink_swell":{"source":"BGS GeoSure","hazard_class":2,"class_count":3},"nearest_tree":{"source":"LiDAR trees outside woodland","distance_m":8,"canopy_class":"lone","mean_height_m":14.2,"survey_year":2022},"mine_workings":{"source":"Mining hazard zones","class":"Moderate"},"coal_reporting_area":false,"building_era":"1930s","claims_history":null},"assessed_at":"2026-09-09"}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=premium-subsidence-risk
+
+**Land quality** — on request
+- Purpose: Every abnormal on a title before you instruct anyone — the things that kill a deal at week six, surfaced in week one.
+- Example (illustrative values): Constraints found 3; Soil: Naturally wet, loamy and clayey; Peat: Across 1.9 ha of the parcel; Flood: Zone 3; Superficial geology: Tidal flat deposits — clay and silt; Bedrock: Ampthill Clay Formation; Aquifer: Principal; Agricultural class: Provisional Grade 2; Permitted waste sites: None within 250 m; Planning: No live applications
+- Example response shape: `{"title_number":"CB123456","area_ha":2.4,"constraints":["flood_zone_3","peat_extent","principal_aquifer"],"soil":{"source":"Cranfield Soilscapes","texture_class":"loamy and clayey","drainage":"Naturally wet"},"peat":{"source":"Natural England peat soil extent","within_parcel":true,"area_ha":1.9},"geology":{"source":"BGS 1:50,000 DiGMapGB","superficial":"Tidal flat deposits — clay and silt","bedrock":"Ampthill Clay Formation"},"aquifer":{"source":"EA aquifer designation","designation":"Principal"},"alc":{"provisional_grade":"2","basis":"Natural England ALC 1:250,000"},"ea_permitted_waste_within_250m":false,"flood_zone":3,"road_frontage_m":40,"planning":{"live_applications":0,"green_belt":false},"assessed_at":"2026-09-09"}`
+- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=premium-land-quality
+
+<!-- END GENERATED: api-surface -->

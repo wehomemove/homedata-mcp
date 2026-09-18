@@ -134,6 +134,58 @@ def _tree(tmp_path: Path, version: str = "1.0.0", init_version: str | None = Non
     return tmp_path
 
 
+PYPROJECT_WITH_A_DECOY = """\
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "homedata-mcp"
+version = "1.0.0"
+
+[tool.some-other-tool]
+version = "9.9.9"
+"""
+
+
+@pytest.mark.parametrize("no_tomllib", [False, True], ids=["tomllib", "python3.10-fallback"])
+def test_pyproject_version_read_the_same_way_with_and_without_tomllib(monkeypatch, no_tomllib):
+    """The 3.10 path is exercised here, not trusted because 3.13 is green.
+
+    tomllib is 3.11+, and this package supports 3.10. The first version of this
+    script imported it unconditionally: green on my machine, ModuleNotFoundError
+    on the 3.10 runner.
+    """
+    if no_tomllib:
+        monkeypatch.setattr(release_check, "tomllib", None)
+
+    assert release_check._pyproject_version(PYPROJECT_WITH_A_DECOY) == "1.0.0"
+
+
+def test_the_fallback_does_not_pick_up_a_version_from_another_table(monkeypatch):
+    # The obvious fallback — match any `^version = "..."` — would return 9.9.9
+    # here if [tool.some-other-tool] came first, then compare two wrong strings
+    # and report a pass. Scoped to [project] instead.
+    monkeypatch.setattr(release_check, "tomllib", None)
+    reordered = """\
+[tool.some-other-tool]
+version = "9.9.9"
+
+[project]
+name = "homedata-mcp"
+version = "1.0.0"
+"""
+    assert release_check._pyproject_version(reordered) == "1.0.0"
+
+
+@pytest.mark.parametrize("no_tomllib", [False, True], ids=["tomllib", "python3.10-fallback"])
+def test_an_unreadable_pyproject_is_undetermined_not_guessed(monkeypatch, no_tomllib):
+    if no_tomllib:
+        monkeypatch.setattr(release_check, "tomllib", None)
+
+    assert release_check._pyproject_version("[project]\nname = \"x\"\n") is None
+    assert release_check._pyproject_version("not toml at all {{{") is None
+
+
 def test_versions_gate_fails_when_the_two_strings_disagree(monkeypatch, tmp_path):
     monkeypatch.setattr(release_check, "ROOT", _tree(tmp_path, "1.0.0", init_version="0.9.0"))
     result = release_check.gate_versions()

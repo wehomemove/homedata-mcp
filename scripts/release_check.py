@@ -51,9 +51,16 @@ import json
 import re
 import subprocess
 import sys
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:  # pragma: no cover - exercised on 3.10 in CI, not locally
+    # The package supports 3.10, where tomllib is not in the stdlib. Falling back
+    # rather than adding a `tomli` dependency: this script must run on a release
+    # machine with nothing installed beyond the package's own requirements.
+    tomllib = None
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -101,13 +108,38 @@ def _tail(text: str, lines: int = 12) -> str:
 # could not check, reported as a crash rather than as UNKNOWN.
 
 
+def _pyproject_version(text: str) -> str | None:
+    """The [project] version, or None if it cannot be read WITH CERTAINTY.
+
+    None is the honest answer, not a guess: the caller turns it into UNDETERMINED,
+    which refuses. A version read wrongly would silently compare two wrong strings
+    and pass.
+    """
+    if tomllib is not None:
+        try:
+            value = tomllib.loads(text)["project"]["version"]
+        except (tomllib.TOMLDecodeError, KeyError, TypeError):
+            return None
+        return value if isinstance(value, str) else None
+
+    # Python 3.10 has no tomllib. Scope the search to the [project] table instead
+    # of matching any `version =` line: a [tool.*] table can carry one too, and
+    # this would then compare the wrong string and call it a pass.
+    section = re.search(r"^\[project\]\s*$(.*?)(?=^\[|\Z)", text, re.MULTILINE | re.DOTALL)
+    if not section:
+        return None
+    found = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', section.group(1), re.MULTILINE)
+    return found.group(1) if found else None
+
+
 def gate_versions() -> Result:
     """pyproject.toml and homedata_mcp/__init__.py must agree."""
     try:
-        pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        packaged = str(pyproject["project"]["version"])
-    except (OSError, tomllib.TOMLDecodeError, KeyError, TypeError) as exc:
-        return Result("versions", UNKNOWN, f"could not read the version from pyproject.toml: {exc}")
+        packaged = _pyproject_version((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    except OSError as exc:
+        return Result("versions", UNKNOWN, f"could not read pyproject.toml: {exc}")
+    if packaged is None:
+        return Result("versions", UNKNOWN, "pyproject.toml declares no readable [project] version")
 
     try:
         source = (ROOT / "homedata_mcp" / "__init__.py").read_text(encoding="utf-8")
@@ -249,8 +281,8 @@ def gate_manifest_current(thor: str | None) -> Result:
 
 def _packaged_version() -> str | None:
     try:
-        return str(tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
-    except (OSError, tomllib.TOMLDecodeError, KeyError, TypeError):
+        return _pyproject_version((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    except OSError:
         return None
 
 

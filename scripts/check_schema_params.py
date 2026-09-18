@@ -199,10 +199,11 @@ def _premise_problems(exception: dict[str, Any], param: dict[str, Any]) -> list[
         return []
     actual = list(param.get("enum", []))
     if actual != list(expected):
-        return [
+        problem = (
             f"{exception['tool']}.{exception['param']}: the exception holds only while the values are "
             f"{expected}, and they are now {actual or 'unrestricted'}. Fix the key at source or re-justify it."
-        ]
+        )
+        return [problem]
     return []
 
 

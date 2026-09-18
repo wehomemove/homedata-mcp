@@ -350,3 +350,41 @@ def test_a_full_pass_says_go_and_still_names_what_it_does_not_cover():
 
 def test_docstring_carries_the_rule_the_whole_script_rests_on():
     assert 'DISTINCT, LOUD OUTCOME' in release_check.__doc__.upper()
+
+
+def test_a_truncated_tail_says_it_truncated():
+    """Silent truncation is how a partial list is read as a whole one.
+
+    `pint --test` elides its fixer list at the terminal width with nothing but an
+    ellipsis; a reviewer read one fixer where there were four, and the hidden one
+    rewrote an expression rather than reformatting it. Several gates here print a
+    count beside this list, so an unmarked cut would show "20 changes" above eight
+    lines and look complete.
+    """
+    output = "\n".join(f"line {n}" for n in range(1, 21))
+    shown = release_check._tail(output, 8)
+
+    assert "[12 earlier line(s) not shown]" in shown
+    assert "line 20" in shown and "line 13" in shown
+    assert "line 12" not in shown.replace("[12 earlier line(s) not shown]", "")
+    # The marker trails the content: the summary renders a result's FIRST line,
+    # so a leading marker replaced "64 passed" with the marker on every pass.
+    assert shown.splitlines()[0] == "line 13"
+    assert shown.splitlines()[-1].startswith("[12 earlier")
+
+
+def test_an_untruncated_tail_claims_no_truncation():
+    # The marker must not appear when nothing was cut, or it stops being a signal.
+    shown = release_check._tail("one\ntwo\nthree", 8)
+
+    assert "not shown" not in shown
+    assert shown == "one\ntwo\nthree"
+
+
+def test_the_clean_tree_gate_count_and_its_list_cannot_disagree_silently(monkeypatch):
+    # The specific shape: a count printed beside a truncated list.
+    _run_returns(monkeypatch, 0, "\n".join(f" M file{n}.py" for n in range(1, 21)))
+    detail = release_check.gate_clean_tree().detail
+
+    assert "20 uncommitted change(s)" in detail
+    assert "not shown" in detail, "a count above a cut list must say it was cut"

@@ -98,9 +98,27 @@ def _run(command: list[str], cwd: Path = ROOT, timeout: int = 600) -> tuple[int 
 
 
 def _tail(text: str, lines: int = 12) -> str:
-    """Last few lines, for a failure message. Never used to establish a count or a set."""
+    """Last few lines of a tool's output, for a failure message.
+
+    IT SAYS WHEN IT HAS CUT SOMETHING. Silent truncation is how a reader takes a
+    partial list for a whole one: `pint --test` elides its fixer list at the
+    terminal width with nothing but an ellipsis, and a reviewer read one fixer
+    where there were four — the hidden one rewrote an expression rather than
+    reformatting it. Several callers here print a count beside this list, so an
+    unmarked cut would show "20 changes" above eight lines and look complete.
+
+    Still not a way to establish a set. When the members matter, print them all:
+    the schema gate names every offending key rather than calling this.
+    """
     kept = [line for line in text.splitlines() if line.strip()]
-    return "\n".join(kept[-lines:]) if kept else "(no output)"
+    if not kept:
+        return "(no output)"
+    if len(kept) <= lines:
+        return "\n".join(kept)
+    hidden = len(kept) - lines
+    # Marker AFTER the content: the summary renders a result's first line, so a
+    # leading marker replaced "64 passed" with "[1 line not shown]" on every pass.
+    return "\n".join([*kept[-lines:], f"[{hidden} earlier line(s) not shown]"])
 
 
 # --- gates ------------------------------------------------------------------

@@ -9,8 +9,8 @@ reach the API, because a rejected request can still be a charged one.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote

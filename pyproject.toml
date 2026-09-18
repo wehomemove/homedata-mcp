@@ -65,7 +65,9 @@ dev = [
 
 [project.urls]
 Homepage = "https://homedata.co.uk/mcp"
-Documentation = "https://homedata.co.uk/docs"
+MCP = "https://homedata.co.uk/mcp"
+Documentation = "https://homedata.co.uk/docs/mcp"
+"API docs" = "https://homedata.co.uk/docs"
 API = "https://api.homedata.co.uk"
 Pricing = "https://homedata.co.uk/pricing"
 Source = "https://github.com/wehomemove/homedata-mcp"

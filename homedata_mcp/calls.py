@@ -10,6 +10,7 @@ reach the API, because a rejected request can still be a charged one.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+import math
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
@@ -79,7 +80,10 @@ def _type_problem(param: Mapping[str, Any], value: Any) -> str | None:
     if isinstance(value, bool):  # bool is an int in Python; never a valid API value here
         return f"{name} must be a {expected}"
     if expected == "number":
-        return None if isinstance(value, (int, float)) else f"{name} must be a number"
+        if not isinstance(value, (int, float)):
+            return f"{name} must be a number"
+        # Python's json accepts NaN and Infinity literals; they would be sent in the URL.
+        return None if math.isfinite(value) else f"{name} must be a finite number"
     if not isinstance(value, str):
         return f"{name} must be a string"
     return None
@@ -113,9 +117,36 @@ def validate_arguments(spec: Mapping[str, Any], arguments: Mapping[str, Any]) ->
             continue
         supplied[name] = value
 
+    problems.extend(_relationship_problems(spec, supplied))
+
     if problems:
         raise InvalidArguments(problems)
     return supplied
+
+
+def _relationship_problems(spec: Mapping[str, Any], supplied: Mapping[str, Any]) -> list[str]:
+    """Check how parameters relate, which checking each one alone cannot.
+
+    The manifest records ``paired_with`` (lat needs lng) and
+    ``alternative_to_previous`` (a postcode OR coordinates). Without this, "lat
+    without lng", or neither alternative, reaches the API as an incomplete request.
+    """
+    problems: list[str] = []
+    for param in spec["params"]:
+        partner = param.get("paired_with")
+        if partner and (param["name"] in supplied) != (partner in supplied):
+            problems.append(f"{param['name']} and {partner} must be given together")
+
+    groups: list[list[str]] = []
+    for param in spec["params"]:
+        if param.get("alternative_to_previous") and groups:
+            groups[-1].append(param["name"])
+        else:
+            groups.append([param["name"]])
+    for names in groups:
+        if len(names) > 1 and not any(name in supplied for name in names):
+            problems.append(f"one of {' or '.join(names)} is required")
+    return problems
 
 
 def _as_query_value(value: Any) -> str:

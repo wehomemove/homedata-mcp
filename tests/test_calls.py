@@ -77,3 +77,24 @@ def test_input_schema_matches_the_manifest():
     assert schema["additionalProperties"] is False
     assert "all" in schema["properties"]["risk_type"]["enum"]
     assert schema["properties"]["uprn"]["description"]
+
+
+@pytest.mark.parametrize("price", [float("nan"), float("inf")])
+def test_non_finite_numbers_are_refused_before_they_reach_a_url(price):
+    with pytest.raises(calls.InvalidArguments) as exc:
+        calls.build_request(spec("calc_mortgage"), {"price": price, "deposit": 1, "rate": 1, "term_years": 1})
+    assert any("finite" in p for p in exc.value.problems)
+
+
+def test_paired_parameters_must_be_given_together():
+    with pytest.raises(calls.InvalidArguments) as exc:
+        calls.build_request(spec("planning"), {"lat": "51.5"})
+    assert any("must be given together" in p for p in exc.value.problems)
+    calls.build_request(spec("planning"), {"lat": "51.5", "lng": "-0.1"})
+
+
+def test_one_of_an_alternative_group_is_required():
+    with pytest.raises(calls.InvalidArguments) as exc:
+        calls.build_request(spec("crime"), {})
+    assert any("one of postcode or lat" in p for p in exc.value.problems)
+    calls.build_request(spec("crime"), {"postcode": "SW1A 2AA"})

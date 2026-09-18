@@ -130,7 +130,9 @@ class HomedataClient:
             return ApiResponse(504, {"error": "timeout", "status_code": 504,
                                      "detail": f"Homedata API did not respond within {self.timeout}s"}, httpx.Headers())
         except httpx.HTTPError as exc:
-            return ApiResponse(0, {"error": "network_error", "status_code": 0, "detail": str(exc)}, httpx.Headers())
+            # 502, not 0: callers classify >= 400 as a failure, and a request that
+            # never reached the API must not read as success.
+            return ApiResponse(502, {"error": "network_error", "status_code": 502, "detail": str(exc)}, httpx.Headers())
         return ApiResponse(resp.status_code, _normalise_response(resp), resp.headers)
 
     async def get(

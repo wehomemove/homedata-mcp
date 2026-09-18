@@ -24,6 +24,12 @@ signup helpers. This is a breaking release; the table below maps every 0.x tool.
 - The `homedata` command is rebuilt on the same tool list:
   `homedata <tool> --<argument> value`, and `homedata tools` lists prices.
 - Requires `fastmcp` 4.x. Default request timeout raised from 10s to 30s.
+- A request that never reaches the API (DNS, connection refused) now comes back as
+  502 rather than 0, so callers that treat >= 400 as failure no longer read it as
+  success. A timeout is still 504.
+- Arguments are checked against the relationships the manifest declares: `lat` and
+  `lng` must be given together, and a tool offering a postcode OR coordinates needs
+  one of them. Non-finite numbers are refused rather than sent as `NaN`.
 
 ### Migration from 0.x
 

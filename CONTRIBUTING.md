@@ -54,8 +54,16 @@ expires rather than relying on a future reader to notice: the `calc_stamp_duty`
 it breaks the moment someone adds Scotland. There
 is deliberately no way to exempt a tool, a path or a file: a carve-out whose
 reason cannot be written per key is too broad, and inherits nothing when a key is
-added later. Run it before a release; it is required green apart from the two
-known keys above.
+added later.
+
+**Known does not mean releasable.** An earlier version of this page said the
+check was "required green apart from the two known keys". That was the wrong
+shape: `term_years` is not a documentation problem, it is a tool that answers
+every mortgage as 25 years whatever term you ask for, and a release carrying it
+ships that answer to everyone. `scripts/release_check.py` therefore refuses on
+*any* undeclared key, the two known ones included. A key stops blocking a release
+by being fixed at source and the manifest regenerated, or by a cited per-key
+exception — never by a reader deciding it is the familiar one.
 
 ## Releasing
 
@@ -64,5 +72,27 @@ Publishing needs a go from the product owner. When there is one:
 1. Set the version in `pyproject.toml` and `homedata_mcp/__init__.py` (a test
    checks they match) and date the CHANGELOG entry.
 2. Merge to `main` with CI green.
-3. Push a tag `vX.Y.Z`. `.github/workflows/release.yml` builds and publishes
+3. **Run the release check and get a GO:**
+
+   ```
+   python scripts/release_check.py --thor <path to a thor checkout>
+   ```
+
+   It exits non-zero unless every gate passes, and says which gate refused and
+   why. Eight gates: the two version strings agree, `vX.Y.Z` is not already a
+   tag, the CHANGELOG entry is dated rather than "unreleased", the working tree
+   is clean, the server matches the manifest, the manifest matches the published
+   catalogue, every query key is one loki's schema declares, and regenerating
+   from the catalogue reproduces the committed manifest.
+
+   It distinguishes **FAIL** ("determined to be wrong") from **UNDETERMINED**
+   ("could not be checked" — no network, no thor checkout, a tool that would not
+   run). Both refuse. An undetermined gate is never a passing one: a release
+   check that goes green because it could not check is worse than no check, and
+   `--offline` can therefore never produce a GO.
+
+4. Push a tag `vX.Y.Z`. `.github/workflows/release.yml` builds and publishes
    to PyPI through trusted publishing; no token is involved.
+
+The check reports; it does not tag and it does not publish. Step 1 of this list
+is still yours, and so is the product owner's go.

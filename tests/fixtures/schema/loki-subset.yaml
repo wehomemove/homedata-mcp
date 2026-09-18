@@ -1,0 +1,31 @@
+# A cut-down stand-in for loki's OpenAPI schema, carrying only the paths these
+# tests need and the parameters loki really declares for them (read from the live
+# schema at https://api.homedata.co.uk/api/schema/yaml/, 2026-09-18).
+openapi: 3.0.3
+info:
+  title: Stand-in
+  version: 1.0.0
+paths:
+  /calculators/mortgage/:
+    get:
+      parameters:
+      - {in: query, name: price, required: true, schema: {type: integer}}
+      - {in: query, name: deposit, required: true, schema: {type: integer}}
+      - {in: query, name: rate, required: true, schema: {type: number}}
+      - {in: query, name: term, required: false, schema: {type: integer}}
+  /schools/nearby/:
+    get:
+      parameters:
+      - {in: query, name: postcode, required: false, schema: {type: string}}
+      - {in: query, name: radius_km, required: false, schema: {type: number}}
+  /risks/{risk_type}/:
+    get:
+      parameters:
+      - {in: path, name: risk_type, required: true, schema: {type: string}}
+      - {in: query, name: uprn, required: true, schema: {type: integer}}
+  /property/{uprn}/{tier}/:
+    get:
+      parameters:
+      - {in: path, name: uprn, required: true, schema: {type: integer}}
+      - {in: path, name: tier, required: true, schema: {type: string}}
+      - {in: query, name: with, required: false, schema: {type: string}}

@@ -29,7 +29,33 @@ pytest
 - `tests/test_stdio_smoke.py`: a real MCP client session over stdio, against
   a local stand-in for the API.
 - `.github/workflows/drift.yml` (weekly): the manifest still matches the
-  public Playground catalogue at https://homedata.co.uk/llms-full.txt.
+  public Playground catalogue at https://homedata.co.uk/llms-full.txt, and every
+  query key in the manifest is a parameter loki's live schema declares.
+
+## The schema check, and why a key can be wrong while everything is green
+
+`scripts/check_schema_params.py` compares the manifest's query keys with loki's
+live OpenAPI schema. It exists because nothing else did: the parity guard compares
+the server with the manifest, the drift check compares the manifest with the
+published catalogue, and a key the catalogue sends that loki quietly ignores
+satisfies both. That is how `calc_mortgage` came to send `term_years`, which loki
+drops, returning a confident 25-year answer whatever term you ask for.
+
+It is **expected to fail today** on exactly two keys, `calc_mortgage.term_years`
+and `schools.radius`. Both are catalogue defects being fixed at source; when that
+lands, regenerate the manifest and the check goes green. Do not silence them here.
+
+A key the schema does not declare can also be a schema that under-declares, so an
+exception is possible — per key, in `homedata_mcp/manifest/schema_exceptions.json`,
+naming the one key and citing the measurement or source that justifies it. An exception may also state the premise it rests on
+(`"valid_while": {"param_enum_is": [...]}`), and then it fails when that premise
+expires rather than relying on a future reader to notice: the `calc_stamp_duty`
+`country` exception is valid only while the catalogue offers `england` alone, so
+it breaks the moment someone adds Scotland. There
+is deliberately no way to exempt a tool, a path or a file: a carve-out whose
+reason cannot be written per key is too broad, and inherits nothing when a key is
+added later. Run it before a release; it is required green apart from the two
+known keys above.
 
 ## Releasing
 

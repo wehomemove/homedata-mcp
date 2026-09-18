@@ -1,4 +1,4 @@
-name: Playground catalogue drift
+name: Catalogue and schema drift
 
 # thor, which holds the Playground catalogue, is private, so this cannot
 # regenerate tools.json. It reads the public llms-full.txt that thor generates
@@ -32,3 +32,15 @@ jobs:
 
       - name: Compare tools.json with the live catalogue
         run: python scripts/check_drift.py
+
+      # Nothing else compares the manifest with what loki ACCEPTS: the parity guard
+      # checks the server against the manifest, the step above checks the manifest
+      # against the published catalogue. This is how term_years reached two
+      # published packages.
+      - name: Install the schema reader
+        if: always()
+        run: python -m pip install 'pyyaml>=6'
+
+      - name: Compare tools.json query keys with loki's live schema
+        if: always()
+        run: python scripts/check_schema_params.py

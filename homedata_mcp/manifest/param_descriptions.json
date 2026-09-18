@@ -36,6 +36,6 @@
     "calc_mortgage.price": "Purchase price in pounds.",
     "calc_mortgage.deposit": "Deposit paid up front, in pounds.",
     "calc_mortgage.rate": "Annual interest rate as a percentage, for example 4.5 for 4.5%.",
-    "calc_mortgage.term_years": "Mortgage term in years."
+    "calc_mortgage.term": "Mortgage term in years."
   }
 }

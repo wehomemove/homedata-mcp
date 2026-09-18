@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: a13bdec5a7a2310094837195a4935cafb2874a09c04eb1f128acbe2eee59c561) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: 5564dcbbdfa561d125bccf37fe2cbdf6a6da3e05ca5f44db29f09901085b5b97) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface — All Endpoints
 
 Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -100,7 +100,7 @@ Pick one fact about one UPRN — cheaper than a tier when you only need one fiel
 - Params: `uprn` (required)
 
 **GET /risks/{risk_type}/**
-- Weight: 1 token per hazard or flood layer; `all` is 5 tokens
+- Weight: 1 token for a single hazard or flood layer; 5 tokens for risk_type=all (every environmental hazard in one sweep).
 - Purpose: Environmental risk scores — flood, radon, noise, landfill, coal mining, invasive plants, air quality.
 - Params: `uprn` (optional); `lat` (optional, alternative to the previous param); `lng` (optional, alternative to the previous param)
 - `risk_type` values: `all`, `flood`, `radon`, `landfill`, `coal_mining`, `non_coal_mining`, `noise`, `air_quality_today`, `invasive_plants`. `all` returns every hazard row in one response.
@@ -299,7 +299,7 @@ Free calculators — no tokens spent. Use them anywhere.
 **GET /calculators/mortgage/**
 - Weight: free — no tokens spent
 - Purpose: Mortgage repayment calculator — given price + deposit + rate + term, returns monthly payment, total repayment, total interest, LTV and LTI ratios. Free endpoint — counts zero against your quota.
-- Params: `price` (required); `deposit` (required); `rate` (required); `term_years` (required)
+- Params: `price` (required); `deposit` (required); `rate` (required); `term` (required)
 
 ### Address lookup
 

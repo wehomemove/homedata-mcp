@@ -56,10 +56,41 @@ def test_new_self_serve_endpoint_is_drift():
 
 
 def test_risks_all_price_change_is_drift():
-    old = "- Weight: 1 token per hazard or flood layer; `all` is 5 tokens"
-    assert old in SURFACE
-    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(old, old.replace("is 5", "is 7")))
+    # The catalogue's current wording. thor reworded this on 2026-09-18; the
+    # previous form is covered below so the older pattern does not become
+    # untested code that quietly stops working.
+    old = ("- Weight: 1 token for a single hazard or flood layer; "
+           "5 tokens for risk_type=all (every environmental hazard in one sweep).")
+    assert old in SURFACE, "the fixture no longer carries the wording this test mutates"
+    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(old, old.replace("5 tokens for", "7 tokens for")))
     assert len(drift) == 2
+
+
+@pytest.mark.parametrize("weight", [
+    "1 token per hazard or flood layer; `all` is 5 tokens",           # before 2026-09-18
+    "1 token for a single hazard or flood layer; 5 tokens for risk_type=all "
+    "(every environmental hazard in one sweep).",                     # after
+])
+def test_both_risks_phrasings_parse_to_the_same_price(weight):
+    """Two ways of writing one price must read as one price.
+
+    The parser refused the reworded line rather than guessing at it, which is the
+    behaviour we want — but it meant a copy edit upstream read as a broken file.
+    Both forms are anchored patterns, not one loose one: a pattern permissive
+    enough to absorb any future rewording would also absorb a changed price.
+    """
+    line = ADDRESS_FIND + f"\n**GET /risks/{{risk_type}}/**\n- Weight: {weight}\n"
+    surface = SURFACE.replace(ADDRESS_FIND, line)
+    _, entries = check_drift.parse_surface(surface)
+    assert entries[("GET", "/risks/{risk_type}/", (1, False, 5))] >= 1
+
+
+def test_an_unreadable_weight_refuses_rather_than_guessing():
+    # The failure mode this parser must never have: a price it cannot read
+    # treated as a price it can. FormatError is the correct outcome.
+    broken = ADDRESS_FIND + "\n**GET /risks/{risk_type}/**\n- Weight: cheap for one, more for all\n"
+    with pytest.raises(check_drift.FormatError, match="unrecognised weight"):
+        check_drift.parse_surface(SURFACE.replace(ADDRESS_FIND, broken))
 
 
 def test_enterprise_entries_are_never_drift():

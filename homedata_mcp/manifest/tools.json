@@ -2,10 +2,10 @@
   "schema_version": 1,
   "source": {
     "repository": "wehomemove/thor",
-    "commit": "a644dab7882778b7c11cf4568e80819da83f17d9",
+    "commit": "f9fde2cf04e72b283056da0d173ccfed73d509c9",
     "catalogue": "resources/js/Pages/Developer/Playground/Index.vue",
-    "catalogue_sha256": "518702f753b007fa507663c4d8936b169f6da1fd685565dfb49b3f73a01ce529",
-    "llms_full_api_surface_source_hash": "a13bdec5a7a2310094837195a4935cafb2874a09c04eb1f128acbe2eee59c561"
+    "catalogue_sha256": "98e780de35230fc33f7c224fb984c32d6d85b0b48cbbf4a8f253203ef321d3a3",
+    "llms_full_api_surface_source_hash": "5564dcbbdfa561d125bccf37fe2cbdf6a6da3e05ca5f44db29f09901085b5b97"
   },
   "rules": {
     "offered": "Playground ENDPOINTS entries with a path, not enterprise:true, not adminOnly:true",
@@ -1507,7 +1507,7 @@
           "playground_hint": "Mortgage interest rate, percent (e.g. 4.5 for 4.5%)."
         },
         {
-          "name": "term_years",
+          "name": "term",
           "in": "query",
           "type": "number",
           "required": true,

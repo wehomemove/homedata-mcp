@@ -176,8 +176,8 @@ async def test_register_all_with_no_client_only_registers_signup():
     mcp = FastMCP(name="test")
     register_all(mcp, client=None)
 
-    tools = await mcp.get_tools()
-    tool_names = set(tools.keys()) if isinstance(tools, dict) else {t.name for t in tools}
+    tools = await mcp.list_tools()  # fastmcp 4 removed get_tools()
+    tool_names = {t.name for t in tools}
 
     # Signup tools must be present
     assert "start_homedata_signup" in tool_names

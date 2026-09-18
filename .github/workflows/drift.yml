@@ -1,0 +1,30 @@
+name: Playground catalogue drift
+
+# thor, which holds the Playground catalogue, is private, so this cannot
+# regenerate tools.json. It reads the public llms-full.txt that thor generates
+# from the same catalogue and fails when the offered endpoints or their token
+# prices no longer match tools.json. Exit 2 (could not fetch or parse) also
+# fails the run, but is not a drift verdict: read the log.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'   # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Set up Python
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: '3.13'
+
+      - name: Compare tools.json with the live catalogue
+        run: python scripts/check_drift.py

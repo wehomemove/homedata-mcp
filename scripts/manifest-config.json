@@ -1,0 +1,60 @@
+{
+  "_comment": "Hand-maintained inputs to scripts/generate-manifest.mjs. Everything else in tools.json is read from the Playground catalogue.",
+  "cost_rules": {
+    "property-custom": {
+      "kind": "plus_addons",
+      "base": 1,
+      "_source": "Index.vue estimatedCallCost: builderTotalCost = 1 + sum of selected add-on costs"
+    },
+    "risks": {
+      "kind": "when_param",
+      "param": "risk_type",
+      "values": [
+        "all"
+      ],
+      "source_pattern": "=== 'all' \\? (\\d+) :",
+      "captures": {
+        "tokens": 1
+      }
+    }
+  },
+  "param_additions": {
+    "property-custom": [
+      {
+        "name": "with",
+        "in": "query",
+        "type": "string",
+        "required": true,
+        "playground_hint": "Comma-separated add-on slugs (see tokens.addons), or all. The Playground builds this with its add-on picker rather than a declared param."
+      }
+    ]
+  },
+  "include_admin_only": [],
+  "exclusion_notes": {
+    "property-sales": "adminOnly in the Playground (hidden from customers). Excluded by the generic rule; requester confirmation pending as of 2026-09-17. To include, add the id to include_admin_only."
+  },
+  "static_tools": [
+    {
+      "name": "start_homedata_signup",
+      "billable": false,
+      "http_requests": [],
+      "params": [
+        {
+          "name": "email",
+          "type": "string",
+          "required": false
+        }
+      ],
+      "purpose": "Walks a user without an API key through getting one. Makes no API call.",
+      "stub_description": "Start a Homedata signup: returns the signup link and the steps to get an API key for UK property data. Makes no API call."
+    },
+    {
+      "name": "check_homedata_api_key",
+      "billable": false,
+      "http_requests": [],
+      "params": [],
+      "purpose": "Reports whether HOMEDATA_API_KEY is set and active. TARGET contract: must not spend tokens. As of 0.4.0 it calls /address/find/ (2 tokens); T2 decides how to meet the contract.",
+      "stub_description": "Check whether a Homedata API key is configured for this server and what to do next if it is not."
+    }
+  ]
+}

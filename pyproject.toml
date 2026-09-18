@@ -58,6 +58,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8",
+  # scripts/check_schema_params.py reads loki's OpenAPI schema, which is served as YAML only.
+  "pyyaml>=6",
   "pytest-asyncio>=0.23",
   "build>=1.0",
   "ruff>=0.4",

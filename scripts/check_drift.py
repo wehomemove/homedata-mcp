@@ -50,7 +50,8 @@ ENTERPRISE_HEADING = re.compile(r"^### Enterprise\b")
 KNOWN_EXTRA_ENTRIES = {("GET", "/risks/flood/{layer}/"): "flood layers are reached through risks (risk_type flood:<layer>)"}
 
 WEIGHTS = (
-    (re.compile(r"^free\b"), lambda m: (0, False, None)),
+    # Anchored: "free for the first request, then 1 token" must not read as free.
+    (re.compile(r"^free(?: — no tokens spent)?$"), lambda m: (0, False, None)),
     (re.compile(r"^(\d+) tokens? for the base record plus"), lambda m: (int(m[1]), True, None)),
     (re.compile(r"^(\d+) tokens? per hazard or flood layer; `all` is (\d+) tokens?$"), lambda m: (int(m[1]), False, int(m[2]))),
     (re.compile(r"^(\d+) tokens?$"), lambda m: (int(m[1]), False, None)),
@@ -139,7 +140,8 @@ def main(argv: list[str] | None = None) -> int:
                 text = resp.read().decode("utf-8")
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
         drift, note = compare(manifest, text)
-    except (OSError, FormatError, ValueError) as exc:
+    except (OSError, FormatError, ValueError, KeyError, TypeError) as exc:
+        # KeyError/TypeError: a manifest of the wrong shape is unreadable, not a drift verdict.
         print(f"could not check drift: {exc}", file=sys.stderr)
         return 2
 

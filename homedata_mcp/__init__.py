@@ -1,6 +1,6 @@
-"""Homedata MCP server - exposes UK property data to LLM coding assistants."""
+"""Homedata MCP server: UK property data as tools for AI assistants."""
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 
 from .client import HomedataClient, HomedataError
 

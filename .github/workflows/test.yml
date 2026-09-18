@@ -19,6 +19,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          # This job runs code from the pull request; do not leave a token in the
+          # git config for it to read.
+          persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1

@@ -158,3 +158,65 @@ def test_exit_codes(tmp_path):
     none.write_text("[]")
     assert guard.main(["--schema", str(SCHEMA_FILE), "--manifest", str(fixed), "--exceptions", str(none)]) == 0
     assert guard.main(["--schema", str(SCHEMA_FILE), "--manifest", str(bad), "--exceptions", str(none)]) == 1
+
+
+def _stamp_duty(enum):
+    return {"tools": [{"name": "calc_stamp_duty", "method": "GET", "path": "/calculators/stamp-duty/", "params": [
+        {"name": "country", "in": "query", "type": "string", "required": False, "enum": enum},
+    ]}]}
+
+
+STAMP_DUTY_SCHEMA = guard.load_schema("""
+openapi: 3.0.3
+info: {title: t, version: '1'}
+paths:
+  /calculators/stamp-duty/:
+    get:
+      parameters:
+      - {in: query, name: price, schema: {type: integer}}
+""")
+
+CONDITIONAL = {("calc_stamp_duty", "country"): {
+    "tool": "calc_stamp_duty", "param": "country", "reason": "r", "evidence": "e",
+    "valid_while": {"param_enum_is": ["england"]},
+}}
+
+
+def test_a_conditional_exception_holds_while_its_premise_does():
+    assert guard.check(_stamp_duty(["england"]), STAMP_DUTY_SCHEMA, CONDITIONAL) == []
+
+
+def test_a_conditional_exception_fails_when_its_premise_expires():
+    # Whoever adds Scotland will not read the exception file; the exception reads itself.
+    problems = guard.check(_stamp_duty(["england", "scotland"]), STAMP_DUTY_SCHEMA, CONDITIONAL)
+    assert len(problems) == 1
+    assert "calc_stamp_duty.country" in problems[0]
+    assert "['england']" in problems[0] and "scotland" in problems[0]
+
+
+def test_a_conditional_exception_fails_when_the_values_become_unrestricted():
+    manifest = _stamp_duty(["england"])
+    del manifest["tools"][0]["params"][0]["enum"]
+    problems = guard.check(manifest, STAMP_DUTY_SCHEMA, CONDITIONAL)
+    assert len(problems) == 1 and "unrestricted" in problems[0]
+
+
+@pytest.mark.parametrize("condition", [
+    {"enum_is": ["england"]},
+    {},
+    {"param_enum_is": "england"},
+    {"param_enum_is": [1]},
+], ids=["unknown condition", "empty", "not a list", "not strings"])
+def test_a_malformed_premise_is_refused(tmp_path, condition):
+    path = tmp_path / "schema_exceptions.json"
+    path.write_text(json.dumps([{
+        "tool": "calc_stamp_duty", "param": "country", "reason": "r", "evidence": "e", "valid_while": condition,
+    }]))
+    with pytest.raises(guard.Unreachable):
+        guard.load_exceptions(path)
+
+
+def test_the_committed_stamp_duty_exception_asserts_its_premise():
+    exceptions = guard.load_exceptions(ROOT / "homedata_mcp" / "manifest" / "schema_exceptions.json")
+    entry = exceptions[("calc_stamp_duty", "country")]
+    assert entry["valid_while"] == {"param_enum_is": ["england"]}

@@ -59,6 +59,10 @@ EXCEPTIONS = ROOT / "homedata_mcp" / "manifest" / "schema_exceptions.json"
 LIVE_SCHEMA = "https://api.homedata.co.uk/api/schema/yaml/"
 
 EXCEPTION_KEYS = {"tool", "param", "reason", "evidence"}
+# An exception may also carry the premise it rests on, so it fails when that stops
+# being true rather than explaining itself to a reader who will not be there.
+OPTIONAL_EXCEPTION_KEYS = {"valid_while"}
+VALID_WHILE_CONDITIONS = {"param_enum_is"}
 
 
 class Unreachable(Exception):
@@ -99,9 +103,22 @@ def load_exceptions(path: Path) -> dict[tuple[str, str], dict[str, str]]:
     out: dict[tuple[str, str], dict[str, str]] = {}
     for index, entry in enumerate(entries):
         where = f"{path.name}[{index}]"
-        if not isinstance(entry, dict) or set(entry) != EXCEPTION_KEYS:
-            raise Unreachable(f"{where} must have exactly {sorted(EXCEPTION_KEYS)}")
+        if not isinstance(entry, dict) or not EXCEPTION_KEYS <= set(entry) or set(entry) - EXCEPTION_KEYS - OPTIONAL_EXCEPTION_KEYS:
+            raise Unreachable(
+                f"{where} must have exactly {sorted(EXCEPTION_KEYS)}, optionally {sorted(OPTIONAL_EXCEPTION_KEYS)}"
+            )
+        condition = entry.get("valid_while")
+        if condition is not None:
+            if not isinstance(condition, dict) or set(condition) - VALID_WHILE_CONDITIONS or not condition:
+                raise Unreachable(f"{where}.valid_while must be one of {sorted(VALID_WHILE_CONDITIONS)}")
+            if "param_enum_is" in condition and (
+                not isinstance(condition["param_enum_is"], list)
+                or not all(isinstance(value, str) for value in condition["param_enum_is"])
+            ):
+                raise Unreachable(f"{where}.valid_while.param_enum_is must be a list of strings")
         for field in sorted(EXCEPTION_KEYS):
+            if field not in entry:
+                continue
             value = entry[field]
             if not isinstance(value, str) or not value.strip():
                 raise Unreachable(f"{where}.{field} must be a non-empty string")
@@ -148,6 +165,7 @@ def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tup
             key = (tool["name"], param["name"])
             if key in exceptions:
                 used.add(key)
+                problems.extend(_premise_problems(exceptions[key], param))
                 continue
             if declared is None:
                 problems.append(
@@ -163,6 +181,29 @@ def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tup
     for key in sorted(set(exceptions) - used):
         problems.append(f"{key[0]}.{key[1]}: exception is no longer needed; remove it")
     return problems
+
+
+def _premise_problems(exception: dict[str, Any], param: dict[str, Any]) -> list[str]:
+    """An exception that states its premise fails when the premise expires.
+
+    calc_stamp_duty.country is only harmless while the catalogue offers england
+    alone: every accepted value is then the one loki assumes. Whoever adds
+    Scotland has no reason to read an exception file in this repo, so the
+    exception itself asserts the enum it depends on.
+    """
+    condition = exception.get("valid_while")
+    if not condition:
+        return []
+    expected = condition.get("param_enum_is")
+    if expected is None:
+        return []
+    actual = list(param.get("enum", []))
+    if actual != list(expected):
+        return [
+            f"{exception['tool']}.{exception['param']}: the exception holds only while the values are "
+            f"{expected}, and they are now {actual or 'unrestricted'}. Fix the key at source or re-justify it."
+        ]
+    return []
 
 
 def main(argv: list[str] | None = None) -> int:

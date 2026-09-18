@@ -20,7 +20,12 @@
   {
     "tool": "calc_stamp_duty",
     "param": "country",
-    "reason": "loki ignores this key, which is the same class of defect as term_years, but it cannot mislead while the catalogue's enum offers only 'england': every accepted value is the one loki assumes. It is the catalogue's to remove, and this exception must go if the enum ever grows.",
-    "evidence": "MEASURED 2026-09-17, keyless (the calculators need no key): GET /calculators/stamp-duty/?price=300000&buyer_type=standard&country=scotland returns the England result, jurisdiction 'England and Northern Ireland', identical to the same call without country."
+    "reason": "loki ignores this key, which is the same class of defect as term_years, but it cannot mislead while the catalogue's enum offers only 'england': every accepted value is the one loki assumes. The exception asserts that enum, so it fails the moment someone adds Scotland or Wales rather than relying on them to read this file.",
+    "evidence": "MEASURED 2026-09-17, keyless (the calculators need no key): GET /calculators/stamp-duty/?price=300000&buyer_type=standard&country=scotland returns the England result, jurisdiction 'England and Northern Ireland', identical to the same call without country.",
+    "valid_while": {
+      "param_enum_is": [
+        "england"
+      ]
+    }
   }
 ]

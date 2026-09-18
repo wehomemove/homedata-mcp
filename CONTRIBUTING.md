@@ -47,7 +47,11 @@ lands, regenerate the manifest and the check goes green. Do not silence them her
 
 A key the schema does not declare can also be a schema that under-declares, so an
 exception is possible — per key, in `homedata_mcp/manifest/schema_exceptions.json`,
-naming the one key and citing the measurement or source that justifies it. There
+naming the one key and citing the measurement or source that justifies it. An exception may also state the premise it rests on
+(`"valid_while": {"param_enum_is": [...]}`), and then it fails when that premise
+expires rather than relying on a future reader to notice: the `calc_stamp_duty`
+`country` exception is valid only while the catalogue offers `england` alone, so
+it breaks the moment someone adds Scotland. There
 is deliberately no way to exempt a tool, a path or a file: a carve-out whose
 reason cannot be written per key is too broad, and inherits nothing when a key is
 added later. Run it before a release; it is required green apart from the two

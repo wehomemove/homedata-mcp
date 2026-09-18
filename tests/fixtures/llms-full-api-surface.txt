@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: 5564dcbbdfa561d125bccf37fe2cbdf6a6da3e05ca5f44db29f09901085b5b97) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: 447c9400b7c2259a2b5e47f2c5fa78f0eb6bfa486bdf50c07357fae155261c24) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface — All Endpoints
 
 Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -102,7 +102,7 @@ Pick one fact about one UPRN — cheaper than a tier when you only need one fiel
 **GET /risks/{risk_type}/**
 - Weight: 1 token for a single hazard or flood layer; 5 tokens for risk_type=all (every environmental hazard in one sweep).
 - Purpose: Environmental risk scores — flood, radon, noise, landfill, coal mining, invasive plants, air quality.
-- Params: `uprn` (optional); `lat` (optional, alternative to the previous param); `lng` (optional, alternative to the previous param)
+- Params: `uprn` (required)
 - `risk_type` values: `all`, `flood`, `radon`, `landfill`, `coal_mining`, `non_coal_mining`, `noise`, `air_quality_today`, `invasive_plants`. `all` returns every hazard row in one response.
 
 **GET /risks/flood/{layer}/** — the flood evidence family (canonical)

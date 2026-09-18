@@ -2,10 +2,10 @@
   "schema_version": 1,
   "source": {
     "repository": "wehomemove/thor",
-    "commit": "f9fde2cf04e72b283056da0d173ccfed73d509c9",
+    "commit": "174eee615bd90805b41371ca939850704e6f987d",
     "catalogue": "resources/js/Pages/Developer/Playground/Index.vue",
-    "catalogue_sha256": "98e780de35230fc33f7c224fb984c32d6d85b0b48cbbf4a8f253203ef321d3a3",
-    "llms_full_api_surface_source_hash": "5564dcbbdfa561d125bccf37fe2cbdf6a6da3e05ca5f44db29f09901085b5b97"
+    "catalogue_sha256": "b69c5cc377107700fbc4c4d53edb5ce852ccb20d72531b33858f2673f1f03ede",
+    "llms_full_api_surface_source_hash": "447c9400b7c2259a2b5e47f2c5fa78f0eb6bfa486bdf50c07357fae155261c24"
   },
   "rules": {
     "offered": "Playground ENDPOINTS entries with a path, not enterprise:true, not adminOnly:true",
@@ -386,26 +386,9 @@
           "name": "uprn",
           "in": "query",
           "type": "string",
-          "required": false,
+          "required": true,
           "pattern": "^\\d+$",
-          "playground_hint": "Property UPRN. The flood layers also accept lat+lng instead."
-        },
-        {
-          "name": "lat",
-          "in": "query",
-          "type": "string",
-          "required": false,
-          "alternative_to_previous": true,
-          "playground_hint": "Latitude (WGS84) — flood layers only"
-        },
-        {
-          "name": "lng",
-          "in": "query",
-          "type": "string",
-          "required": false,
-          "alternative_to_previous": true,
-          "paired_with": "lat",
-          "playground_hint": "Longitude (WGS84) — paired with latitude"
+          "playground_hint": "Property UPRN. Required — this endpoint returns 400 without it."
         }
       ],
       "tokens": {

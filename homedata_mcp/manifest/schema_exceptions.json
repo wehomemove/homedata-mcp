@@ -6,18 +6,6 @@
     "evidence": "loki core/api/views/elasticsearch/address_search.py:419 sets exclude=True with the comment 'Kept live for existing integrations, but hidden from the schema' (read by quinn/api-documentation, 2026-09-16). MEASURED 2026-09-17: GET /address/find/ answers 403 without a key, where an unrouted path answers 404."
   },
   {
-    "tool": "risks",
-    "param": "lat",
-    "reason": "The schema declares only uprn for /risks/{risk_type}/, but the published catalogue documents coordinates as an alternative to a UPRN, and loki's schema is known to under-declare (see address_find above). INFERRED, not measured: confirming it needs an API key, and this exception should be replaced by a measurement when one exists.",
-    "evidence": "public/llms-full.txt api-surface block, flood family entry: 'Params: `uprn` (one of), or `lat` + `lng` (one of, WGS84). UPRN wins if both are sent'. Playground catalogue Index.vue marks lat/lng as alternatives on the risks entry."
-  },
-  {
-    "tool": "risks",
-    "param": "lng",
-    "reason": "Paired with risks.lat; the same schema under-declaration applies. INFERRED, not measured, for the same reason.",
-    "evidence": "public/llms-full.txt api-surface block, flood family entry, as for risks.lat; the manifest records lng as paired_with lat."
-  },
-  {
     "tool": "calc_stamp_duty",
     "param": "country",
     "reason": "loki ignores this key, which is the same class of defect as term_years, but it cannot mislead while the catalogue's enum offers only 'england': every accepted value is the one loki assumes. The exception asserts that enum, so it fails the moment someone adds Scotland or Wales rather than relying on them to read this file.",

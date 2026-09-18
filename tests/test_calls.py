@@ -73,7 +73,9 @@ def test_path_rule_routes_a_prefixed_value():
 
 def test_input_schema_matches_the_manifest():
     schema = calls.input_schema(spec("risks"), calls.param_text_for("risks"))
-    assert schema["required"] == ["risk_type"]
+    # uprn joined risk_type as required on 2026-09-18 (thor#438): the endpoint
+    # 400s without it, and the catalogue had been offering lat/lng as if it did not.
+    assert schema["required"] == ["risk_type", "uprn"]
     assert schema["additionalProperties"] is False
     assert "all" in schema["properties"]["risk_type"]["enum"]
     assert schema["properties"]["uprn"]["description"]

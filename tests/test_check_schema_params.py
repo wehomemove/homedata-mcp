@@ -102,8 +102,11 @@ def test_the_live_manifest_only_fails_on_the_known_escapes():
     assert live_schema_path.exists()
     manifest = json.loads((ROOT / "homedata_mcp" / "manifest" / "tools.json").read_text())
     exceptions = guard.load_exceptions(ROOT / "homedata_mcp" / "manifest" / "schema_exceptions.json")
+    # risks.lat/lng were removed with the params they excused (thor#438): the
+    # catalogue stopped offering coordinates the endpoint never accepted, so the
+    # exceptions became unused — which this guard reports rather than ignores.
     assert {(e["tool"], e["param"]) for e in exceptions.values()} == {
-        ("address_find", "q"), ("risks", "lat"), ("risks", "lng"), ("calc_stamp_duty", "country"),
+        ("address_find", "q"), ("calc_stamp_duty", "country"),
     }
     assert {tool["name"] for tool in manifest["tools"]}
 

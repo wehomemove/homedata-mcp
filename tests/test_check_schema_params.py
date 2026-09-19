@@ -220,3 +220,70 @@ def test_the_committed_stamp_duty_exception_asserts_its_premise():
     exceptions = guard.load_exceptions(ROOT / "homedata_mcp" / "manifest" / "schema_exceptions.json")
     entry = exceptions[("calc_stamp_duty", "country")]
     assert entry["valid_while"] == {"param_enum_is": ["england"]}
+
+
+# --- an empty manifest is a check that could not run, not a clean result ------
+
+
+EMPTY_MANIFEST = {"tools": [], "static_tools": [], "excluded": [], "source": {}}
+
+
+def test_a_manifest_with_no_tools_is_refused_rather_than_passed():
+    """The vacuous pass this guard used to give.
+
+    Before this check, zero tools produced "in step: 0 query keys across 0 tools"
+    and exit 0 — a pass meaning the check never applied, which the output made
+    indistinguishable from a pass meaning it applied and was satisfied.
+
+    scripts/check_drift.py already refuses its own empty parse ("no self-serve
+    endpoints found"). The absence of the same guard here was invisible even to
+    the person who had just written the one next door, which is the argument for
+    it: not that an empty manifest is likely, but that the asymmetry was unseeable
+    from inside either file.
+    """
+    with pytest.raises(guard.Unreachable, match="declares no tools"):
+        guard.check(EMPTY_MANIFEST, SCHEMA, {})
+
+
+def test_the_refusal_is_exit_2_not_exit_1(tmp_path):
+    """A refusal to run and a detected defect must not look alike to a caller.
+
+    exit 1 means "I checked and a key is undeclared" — actionable, a real defect.
+    exit 2 means "I could not check" — nothing was established either way. An
+    empty manifest is the second, so it must never borrow the first's code.
+    """
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps(EMPTY_MANIFEST))
+    none = tmp_path / "none.json"
+    none.write_text("[]")
+
+    assert guard.main(["--schema", str(SCHEMA_FILE), "--manifest", str(empty), "--exceptions", str(none)]) == 2
+
+
+def test_the_refusal_does_not_over_block_a_real_manifest(tmp_path):
+    """The failure this class produces in the other direction.
+
+    A guard that refuses everything is as useless as one that passes everything,
+    and reads as working. The same code path that refuses the empty manifest must
+    let a genuine one through to a real verdict.
+    """
+    fixed = tmp_path / "fixed.json"
+    fixed.write_text(json.dumps(FIXED_MANIFEST))
+    none = tmp_path / "none.json"
+    none.write_text("[]")
+
+    assert guard.main(["--schema", str(SCHEMA_FILE), "--manifest", str(fixed), "--exceptions", str(none)]) == 0
+
+
+def test_tools_present_but_every_param_non_query_still_checks(tmp_path):
+    """Narrow the guard to what it means: no TOOLS, not no query keys.
+
+    A manifest of path-only tools legitimately has zero query keys to compare.
+    That is a real, checkable answer — "nothing to declare" — and must stay exit 0
+    rather than being swept into the refusal.
+    """
+    path_only = {"tools": [{"name": "address_retrieve", "method": "GET", "path": "/address/retrieve/{uprn}/",
+                            "params": [{"name": "uprn", "in": "path", "type": "string", "required": True}]}],
+                 "static_tools": [], "excluded": [], "source": {}}
+
+    assert guard.check(path_only, SCHEMA, {}) == []

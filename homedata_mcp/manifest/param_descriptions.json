@@ -25,7 +25,6 @@
     "planning.radius_km": "Search radius in kilometres. Defaults to 0.5, maximum 5.",
     "planning.type": "Filter by application type, for example Full, Outline, Heritage, Trees or Conditions.",
     "planning.status": "Filter by decision status: Undecided, Approved, Refused or Withdrawn.",
-    "schools.radius": "Search radius in kilometres.",
     "schools.phase": "Filter by education phase. Leave empty for all phases.",
     "schools.ofsted": "Filter by Ofsted rating. Leave empty for all ratings.",
     "listed_buildings.radius_km": "Search radius in kilometres. Defaults to 1, maximum 5.",

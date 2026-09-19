@@ -2,10 +2,10 @@
   "schema_version": 1,
   "source": {
     "repository": "wehomemove/thor",
-    "commit": "174eee615bd90805b41371ca939850704e6f987d",
+    "commit": "63868e0f76536fcfc02936dedd45831e536c55cd",
     "catalogue": "resources/js/Pages/Developer/Playground/Index.vue",
-    "catalogue_sha256": "b69c5cc377107700fbc4c4d53edb5ce852ccb20d72531b33858f2673f1f03ede",
-    "llms_full_api_surface_source_hash": "447c9400b7c2259a2b5e47f2c5fa78f0eb6bfa486bdf50c07357fae155261c24"
+    "catalogue_sha256": "12a2154a45b2280f28da3edca0bca1315d1184a74b628de515715d990e501c91",
+    "llms_full_api_surface_source_hash": "a9b4c23269a18452e3b4a718a41aed654bb8cfe41d8338fae2fdc88311a8eeea"
   },
   "rules": {
     "offered": "Playground ENDPOINTS entries with a path, not enterprise:true, not adminOnly:true",
@@ -753,11 +753,11 @@
           "playground_hint": "UK postcode (England only — e.g. SW1A 2AA, E1 6AN)"
         },
         {
-          "name": "radius",
+          "name": "radius_km",
           "in": "query",
           "type": "string",
           "required": false,
-          "playground_hint": "Search radius in miles — 0.1 to 5.0 (default: 0.5)"
+          "playground_hint": "Search radius in kilometres — up to 10 (default: 3)"
         },
         {
           "name": "phase",

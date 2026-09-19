@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: 447c9400b7c2259a2b5e47f2c5fa78f0eb6bfa486bdf50c07357fae155261c24) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: a9b4c23269a18452e3b4a718a41aed654bb8cfe41d8338fae2fdc88311a8eeea) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface — All Endpoints
 
 Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -270,7 +270,7 @@ Postcode, outcode or boundary-level stats — prices, demographics, amenities, h
 **GET /schools/nearby**
 - Weight: 1 token
 - Purpose: Find schools near a postcode — Ofsted ratings, phase, pupil numbers, and distance. ~27,000 open schools in England from the DfE GIAS register.
-- Params: `postcode` (required); `radius` (optional); `phase` (optional, advanced); `ofsted` (optional, advanced); `limit` (optional, advanced)
+- Params: `postcode` (required); `radius_km` (optional); `phase` (optional, advanced); `ofsted` (optional, advanced); `limit` (optional, advanced)
 
 **GET /planning/search/**
 - Weight: 5 tokens

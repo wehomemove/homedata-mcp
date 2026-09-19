@@ -154,6 +154,22 @@ def schema_query_keys(schema: dict[str, Any], path: str) -> set[str] | None:
 
 
 def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tuple[str, str], dict[str, str]]) -> list[str]:
+    # A manifest with no tools used to PASS here — "in step: 0 query keys across 0
+    # tools" and exit 0. That is a pass meaning the check never applied, which the
+    # output made indistinguishable from a pass meaning it applied and was
+    # satisfied. scripts/check_drift.py already refuses its own empty parse
+    # ("no self-serve endpoints found"); this is the same guard, and its absence
+    # here was invisible even to the person who had just written the one next door.
+    #
+    # Unreachable, not a problem string: an empty manifest is a check that could
+    # not run (exit 2), never a parameter defect it found (exit 1). A caller must
+    # be able to tell "I could not look" from "I looked and it is wrong".
+    if not manifest.get("tools"):
+        raise Unreachable(
+            "the manifest declares no tools, so there are no query keys to check; "
+            "this is an unreadable or truncated manifest rather than a clean result"
+        )
+
     problems: list[str] = []
     used: set[tuple[str, str]] = set()
 

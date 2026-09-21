@@ -259,7 +259,12 @@ def gate_schema() -> Result:
     if code is None:
         return Result("schema", UNKNOWN, f"the schema check could not be run: {output}")
     if code == 2:
-        return Result("schema", UNKNOWN, f"loki's live schema could not be read:\n{_tail(output)}")
+        # Exit 2 means "could not check", and the check has more than one way to
+        # reach it: the live schema being unreachable, and — since the zero-tool
+        # guard landed — a manifest with no tools. Naming one cause in the
+        # headline would assert the wrong reason for the other, which is the
+        # defect this whole script exists to avoid. Let the tool say which.
+        return Result("schema", UNKNOWN, f"the schema check could not run:\n{_tail(output)}")
     if code != 0:
         # Name every key. A refusal whose members are not shown cannot be acted on,
         # and this refusal is the one a person will most want to argue with.

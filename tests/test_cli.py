@@ -47,7 +47,7 @@ def test_a_command_sends_the_manifest_request(monkeypatch, capsys):
 
     monkeypatch.setattr(cli, "HomedataClient", Recording)
     monkeypatch.delenv("HOMEDATA_API_KEY", raising=False)
-    code = cli.main(["calc_mortgage", "--price", "300000", "--deposit", "30000", "--rate", "4", "--term-years", "25",
+    code = cli.main(["calc_mortgage", "--price", "300000", "--deposit", "30000", "--rate", "4", "--term", "25",
                      "--field", "monthly_payment"])
     out = capsys.readouterr()
     assert code == 0 and out.out.strip() == "1425.16"

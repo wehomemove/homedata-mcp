@@ -37,8 +37,8 @@ def test_optional_parameters_left_out_are_not_sent():
 
 
 def test_whole_numbers_are_sent_without_a_decimal_point():
-    req = calls.build_request(spec("calc_mortgage"), {"price": 300000.0, "deposit": 30000, "rate": 4.5, "term_years": 25})
-    assert req.query == {"price": "300000", "deposit": "30000", "rate": "4.5", "term_years": "25"}
+    req = calls.build_request(spec("calc_mortgage"), {"price": 300000.0, "deposit": 30000, "rate": 4.5, "term": 25})
+    assert req.query == {"price": "300000", "deposit": "30000", "rate": "4.5", "term": "25"}
 
 
 def test_property_custom_sends_with():
@@ -52,8 +52,8 @@ def test_property_custom_sends_with():
     ("property_core", {"uprn": 100023336956}, "uprn must be a string"),
     ("property_core", {"uprn": "1", "extra": "x"}, "unknown argument extra"),
     ("risks", {"risk_type": "volcano", "uprn": "1"}, "risk_type must be one of"),
-    ("calc_mortgage", {"price": "lots", "deposit": 1, "rate": 1, "term_years": 1}, "price must be a number"),
-    ("calc_mortgage", {"price": True, "deposit": 1, "rate": 1, "term_years": 1}, "price must be a number"),
+    ("calc_mortgage", {"price": "lots", "deposit": 1, "rate": 1, "term": 1}, "price must be a number"),
+    ("calc_mortgage", {"price": True, "deposit": 1, "rate": 1, "term": 1}, "price must be a number"),
 ])
 def test_invalid_arguments_are_refused(name, arguments, problem):
     with pytest.raises(calls.InvalidArguments) as exc:
@@ -73,7 +73,9 @@ def test_path_rule_routes_a_prefixed_value():
 
 def test_input_schema_matches_the_manifest():
     schema = calls.input_schema(spec("risks"), calls.param_text_for("risks"))
-    assert schema["required"] == ["risk_type"]
+    # uprn joined risk_type as required on 2026-09-18 (thor#438): the endpoint
+    # 400s without it, and the catalogue had been offering lat/lng as if it did not.
+    assert schema["required"] == ["risk_type", "uprn"]
     assert schema["additionalProperties"] is False
     assert "all" in schema["properties"]["risk_type"]["enum"]
     assert schema["properties"]["uprn"]["description"]
@@ -82,7 +84,7 @@ def test_input_schema_matches_the_manifest():
 @pytest.mark.parametrize("price", [float("nan"), float("inf")])
 def test_non_finite_numbers_are_refused_before_they_reach_a_url(price):
     with pytest.raises(calls.InvalidArguments) as exc:
-        calls.build_request(spec("calc_mortgage"), {"price": price, "deposit": 1, "rate": 1, "term_years": 1})
+        calls.build_request(spec("calc_mortgage"), {"price": price, "deposit": 1, "rate": 1, "term": 1})
     assert any("finite" in p for p in exc.value.problems)
 
 

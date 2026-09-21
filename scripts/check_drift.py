@@ -53,7 +53,14 @@ WEIGHTS = (
     # Anchored: "free for the first request, then 1 token" must not read as free.
     (re.compile(r"^free(?: — no tokens spent)?$"), lambda m: (0, False, None)),
     (re.compile(r"^(\d+) tokens? for the base record plus"), lambda m: (int(m[1]), True, None)),
+    # Two phrasings of the same risks price. thor reworded it on 2026-09-18 and
+    # this parser refused the new one — correctly: it raises rather than guessing,
+    # so an unreadable weight is never mistaken for a matching one. Both forms are
+    # kept and both are anchored. A looser pattern would read future rewordings
+    # too, including ones that changed the price.
     (re.compile(r"^(\d+) tokens? per hazard or flood layer; `all` is (\d+) tokens?$"), lambda m: (int(m[1]), False, int(m[2]))),
+    (re.compile(r"^(\d+) tokens? for a single hazard or flood layer; (\d+) tokens? for risk_type=all"
+                r"(?: \([^)]*\))?\.?$"), lambda m: (int(m[1]), False, int(m[2]))),
     (re.compile(r"^(\d+) tokens?$"), lambda m: (int(m[1]), False, None)),
 )
 

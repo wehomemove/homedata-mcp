@@ -118,6 +118,7 @@ shows what a property has before you commit to a tier.
 | `healthcare_hospitals` | 1 | Registered hospitals near a property, with name, address, postcode, region, distance and a link to the official register record. England only. |
 | `healthcare_pharmacies` | 1 | Pharmacies near a property, with name, address, phone and website where known. |
 | `listed_buildings` | 3 | Listed buildings within a radius of a postcode: Grade I, II* and II entries with name, location, listing date and a link to the official record. |
+| `listing_address` | 20 | Turn a listing id into the property it belongs to: its UPRN and full address. Pass the id of a property_listings row. Free when the same listing has already been revealed on your account. |
 | `planning` | 5 | Planning applications near a postcode or coordinates: type, status, description and decision date, with filters for recency, type and status. |
 | `postcode_profile` | 1 | One-call summary of a postcode: deprivation, crime, average property price, nearby schools, transport and broadband. Cheaper than calling those tools separately. The first call for a postcode is slow, because the parts are gathered and combined when you ask for them; the result is then cached, so asking again for the same postcode is fast. Wait for the first call rather than retrying it — retrying abandons the work already in progress and starts it over. |
 | `price_distributions` | 1 | How property prices are spread across an outcode area: percentiles, median and transaction counts by property type. |
@@ -129,7 +130,9 @@ shows what a property has before you commit to a tier.
 | `property_core` | 25 | The full listing view of a property: everything in Base plus council tax band, flood risk, schools, broadband, crime, demographics, solar potential, confirmed sales and planning constraints. The usual starting point. |
 | `property_custom` | 1 + add-ons | Build your own property record: the base record plus only the add-ons you ask for, so you pay for exactly what you use. Call property_discovery first to see which add-ons a property has. |
 | `property_discovery` | 1 | The cheap first call for a property: which data is available for it, what each add-on costs, and the shortcuts to each tier. Also the quickest way to check whether a UPRN is one we hold. |
+| `property_listings` | 20 | Listing history for one property: every time it was put on the market, with the asking price, how many times that price was cut, days on market, and whether it ended sold or withdrawn. One row per listing; each row's id works with property_sale_events and listing_address. |
 | `property_lr_titles` | 10 | Land Registry title records for a property: tenure, title number and registered owner where held. |
+| `property_sale_events` | 20 | The dated timeline behind a sale: added, each price reduction or increase, under offer, sold subject to contract, completed or withdrawn, with the price at each step. Pass a sale id, or a listing id from property_listings, and optionally one event type. |
 | `risks` | 1; 5 when `risk_type` is all | Environmental risk screening for a property: flood, radon, noise, landfill, coal and other mining, invasive plants and air quality. Ask for one hazard, or for all of them in a single response. |
 | `schools` | 1 | Schools near a postcode, with Ofsted rating, phase, pupil numbers and distance, from the Department for Education register. England only. |
 | `solar` | 5 | Solar potential for a property: usable roof area, estimated yearly generation, savings, payback period and carbon saved. |

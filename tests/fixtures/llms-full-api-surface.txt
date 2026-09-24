@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: a9b4c23269a18452e3b4a718a41aed654bb8cfe41d8338fae2fdc88311a8eeea) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: 328e83248f6c83c6cebf40139d4031b3050a2d1cf0004592e56f59738a9562a3) — written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface — All Endpoints
 
 Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -123,6 +123,29 @@ Pick one fact about one UPRN — cheaper than a tier when you only need one fiel
 - Weight: 1 token
 - Purpose: Ofcom Connected Nations broadband speed data for a UK postcode — avg/max download+upload speeds, superfast/ultrafast/gigabit/full-fibre coverage %, and premises count. 1 token.
 - Params: `postcode` (required)
+
+### Sale flow
+
+Listing history and the dated events behind each asking price.
+
+**GET /property_listings/**
+- Weight: 20 tokens
+- Purpose: Thirty years of listing history for one property — what it asked, how often that was cut, and whether it sold or quietly came off.
+- Params: `uprn` (required)
+
+**GET /property_sale_events/**
+- Weight: 20 tokens
+- Purpose: The negotiation behind the headline price — every price move, offer and withdrawal, dated.
+- Params: `sale` (optional); `listing` (optional, alternative to the previous param); `event_type` (optional); `ordering` (optional, advanced)
+
+### Lead source
+
+Turn a live listing into its exact address, UPRN and event timeline.
+
+**POST /listing-address/**
+- Weight: 20 tokens
+- Purpose: Turn a listing into a real address — the full postal address and the whole sale history, ready to act on.
+- Params: `listing_id` (required)
 
 ### Single property amenities
 
@@ -319,18 +342,6 @@ Find an address — by query, postcode, or building.
 
 Enterprise products, scoped and priced per customer. They are not part of the self-serve surface and do not spend tokens from your balance. Do not infer paths or parameters for them — the team agrees coverage, cadence, SLA and price directly. Register interest at https://homedata.co.uk/try.
 
-**All Property Listings** — on request
-- Purpose: Thirty years of listing history for one property — what it asked, how often that was cut, and whether it sold or quietly came off.
-- Example (illustrative values): Last asking price £325,000; First listed: 30 September 2019; Left the market: Withdrawn; Days on market: 2,537; Price reductions: None; Property: 3 bed detached
-- Example response shape: `{"count":1,"results":[{"id":"7f9200c5-93be-487a-befa-26aa8667b3e4","street":"Mayfield Park North Fishponds BS16","postcode":"BS16 3NJ","transaction_type":"Sale","latest_price":325000,"bedrooms":3,"bathrooms":1,"reception_rooms":1,"property_type":"Detached","is_reduced":false,"times_reduced":0,"is_withdrawn":true,"days_on_market":2537,"added_date":"2019-09-30"}]}`
-- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=property-listings
-
-**Sale Events** — on request
-- Purpose: The negotiation behind the headline price — every price move, offer and withdrawal, dated.
-- Example (illustrative values): Events on record 3; 30 September 2019: Added; 7 October 2019: Sold STC; 30 March 2020: Withdrawn
-- Example response shape: `{"count":3,"results":[{"id":53472,"listing":"7f9200c5-93be-487a-befa-26aa8667b3e4","event_type":"Withdrawn","date":"2020-03-30","price":325000},{"id":53471,"listing":"7f9200c5-93be-487a-befa-26aa8667b3e4","event_type":"Sold STC","date":"2019-10-07","price":325000},{"id":53470,"listing":"7f9200c5-93be-487a-befa-26aa8667b3e4","event_type":"Added","date":"2019-09-30","price":325000}]}`
-- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=property-sale-events
-
 **Land Registry Sales** — on request
 - Purpose: What actually changed hands, not what was asked — every HM Land Registry confirmed completion, with the date and the real price.
 - Example (illustrative values): Price paid £310,000; Completion date: 9 April 2020; Against the asking price: £15,000 below; Land Registry txid: A96E4ACB-DBFE-9205-E053-6C04A8C0DA09
@@ -348,12 +359,6 @@ Enterprise products, scoped and priced per customer. They are not part of the se
 - Example (illustrative values): Listings matched 10,000+; Terraced · 3 bed · added today: Mayfield Park North, BS16 3NJ; Detached · 2 bed · added today: Cavendish Road, BA1 2UD; Detached · 3 bed · added today: Elmdon Lane, B37 7EQ; Filter on: Reductions, days on market, EPC band, floor area, garden, parking
 - Example response shape: `{"count":10000,"page":1,"page_size":3,"total_pages":3334,"results":[{"id":"c61d5383-1214-4e6f-b63c-1153863bc50f","street":"Mayfield Park North","postcode":"BS16 3NJ","transaction_type":"Sale","latest_status":"For sale","latest_price":385000,"bedrooms":3,"bathrooms":1,"property_type":"Terraced","ownership":"Freehold","is_new_build":false,"is_reduced":false,"times_reduced":0,"days_on_market":0,"added_date":"2026-09-10"}]}`
 - Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=live-listings
-
-**Unlock UPRN + Address** — on request
-- Purpose: Turn a listing into a real address — the full postal address and the whole sale history, ready to act on.
-- Example (illustrative values): Returns UPRN + address + timeline; You send: listing_id; You get: The full postal address; You get: The UPRN; You get: The full event timeline; Already revealed: Free
-- Example response shape: `{"listing_id":"<id from any Live Listings result>","uprn":100023336956,"full_address":"10 Downing Street, London SW1A 2AA","charged":true}`
-- Access: enterprise only — scoped, priced and switched on per customer. Register interest at https://homedata.co.uk/try?endpoint=listing-address
 
 **Flood risk expert** — on request
 - Purpose: Everything the Environment Agency knows about flooding at one address — seven layers behind the headline band, 1703 to the 2080s. England only.

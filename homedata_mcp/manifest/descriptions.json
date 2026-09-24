@@ -56,5 +56,8 @@
   "schools": "Schools near a postcode, with Ofsted rating, phase, pupil numbers and distance, from the Department for Education register. England only. Costs 1 token.",
   "solar": "Solar potential for a property: usable roof area, estimated yearly generation, savings, payback period and carbon saved. Costs 5 tokens.",
   "start_homedata_signup": "Get a Homedata API key so the property data tools can be used: returns the sign-up link and the steps to follow. Makes no API call.",
-  "check_homedata_api_key": "Check whether this server has a Homedata API key configured and what to do next if it has not. Makes no API call, so it never spends anything."
+  "check_homedata_api_key": "Check whether this server has a Homedata API key configured and what to do next if it has not. Makes no API call, so it never spends anything.",
+  "property_listings": "Listing history for one property: every time it was put on the market, with the asking price, how many times that price was cut, days on market, and whether it ended sold or withdrawn. One row per listing; each row's id works with property_sale_events and listing_address. Costs 20 tokens per request, however many listings the property has.",
+  "property_sale_events": "The dated timeline behind a sale: added, each price reduction or increase, under offer, sold subject to contract, completed or withdrawn, with the price at each step. Pass a sale id, or a listing id from property_listings, and optionally one event type. Costs 20 tokens.",
+  "listing_address": "Turn a listing id into the property it belongs to: its UPRN and full address. Pass the id of a property_listings row. Free when the same listing has already been revealed on your account. Costs 20 tokens."
 }

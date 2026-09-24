@@ -8,7 +8,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [1.0.0] - unreleased
 
 A rebuild. The tools are now exactly the self-serve endpoints of the Homedata
-Developer Playground, generated from its catalogue: 56 data tools plus the two
+Developer Playground, generated from its catalogue: 59 data tools plus the two
 signup helpers. This is a breaking release; the table below maps every 0.x tool.
 
 ### Changed
@@ -54,7 +54,7 @@ signup helpers. This is a breaking release; the table below maps every 0.x tool.
 | `get_demographics` | `demographics` |
 | `get_broadband` | `broadband` |
 | `get_postcode_profile` | `postcode_profile` |
-| `search_property_listings` | removed: listings are not offered through the MCP |
+| `search_property_listings` | `property_listings` (one property's listing history, by `uprn`) |
 | `get_property_sales` | removed: not offered through the MCP |
 | `get_comparables` | removed: not offered through the MCP |
 | `start_homedata_signup`, `check_homedata_api_key` | unchanged names |
@@ -66,6 +66,11 @@ roof, garden, parking, dimensions, land, construction, EPC renovations),
 price trends, distributions and growth, `solar`, `listed_buildings`,
 amenities, fuel stations, healthcare, `boundaries`, and the stamp duty and
 mortgage calculators. The full list with prices is in the README.
+- Listing history and sale timelines: `property_listings` (every listing of one
+  property), `property_sale_events` (the dated events behind a sale) and
+  `listing_address` (a listing's UPRN and full address). 20 tokens each.
+- `listing_address` is the first tool that sends a POST. Its argument goes in a
+  JSON body with a fresh `Idempotency-Key` on every call, as the Playground does.
 
 ## [0.4.0] - 2026-06-01
 

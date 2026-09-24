@@ -2,14 +2,15 @@
   "schema_version": 1,
   "source": {
     "repository": "wehomemove/thor",
-    "commit": "63868e0f76536fcfc02936dedd45831e536c55cd",
+    "commit": "4a233b64aaf6e464ebc4622ce9cc993cea6b3a40",
     "catalogue": "resources/js/Pages/Developer/Playground/Index.vue",
-    "catalogue_sha256": "12a2154a45b2280f28da3edca0bca1315d1184a74b628de515715d990e501c91",
-    "llms_full_api_surface_source_hash": "a9b4c23269a18452e3b4a718a41aed654bb8cfe41d8338fae2fdc88311a8eeea"
+    "catalogue_sha256": "ca632db1308468f5e5523721594fa4379681ae2b1d6060cee2d4b9c871b67cf6",
+    "llms_full_api_surface_source_hash": "328e83248f6c83c6cebf40139d4031b3050a2d1cf0004592e56f59738a9562a3"
   },
   "rules": {
     "offered": "Playground ENDPOINTS entries with a path, not enterprise:true, not adminOnly:true",
     "tool_name": "snake_case of the Playground id (hyphens become underscores). A design choice: the Playground has ids and labels, no tool names.",
+    "request_body": "A POST tool sends its non-path params as a JSON body (in: body). idempotency_key: true means each call carries a fresh UUID Idempotency-Key header.",
     "base_url": "Paths are relative to https://api.homedata.co.uk and also answer under /api/."
   },
   "tools": [
@@ -175,6 +176,90 @@
           "land": 1,
           "construction": 1
         }
+      }
+    },
+    {
+      "name": "property_listings",
+      "playground_id": "property-listings",
+      "label": "All Property Listings",
+      "method": "GET",
+      "path": "/property_listings/",
+      "params": [
+        {
+          "name": "uprn",
+          "in": "query",
+          "type": "string",
+          "required": true,
+          "pattern": "^\\d+$",
+          "playground_hint": "UPRN — finds every listing ever created for this property."
+        }
+      ],
+      "tokens": {
+        "default": 20
+      }
+    },
+    {
+      "name": "property_sale_events",
+      "playground_id": "property-sale-events",
+      "label": "Sale Events",
+      "method": "GET",
+      "path": "/property_sale_events/",
+      "params": [
+        {
+          "name": "sale",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "pattern": "^\\d+$",
+          "playground_hint": "A sale ID, if you already hold one. For listing rows use the Listing UUID field below."
+        },
+        {
+          "name": "listing",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "alternative_to_previous": true,
+          "playground_hint": "Listing UUID from a /property_listings/ row's id field — equivalent to passing the sale ID."
+        },
+        {
+          "name": "event_type",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "enum": [
+            "Added",
+            "Added by another agent",
+            "Added by new agent",
+            "Reduced",
+            "Price Increased",
+            "Under offer",
+            "Sold STC",
+            "Sold STCM",
+            "Completed",
+            "Withdrawn",
+            "Sale Cancelled",
+            "Let agreed"
+          ],
+          "playground_hint": "Filter to a single event type — leave blank for all"
+        },
+        {
+          "name": "ordering",
+          "in": "query",
+          "type": "string",
+          "required": false,
+          "enum": [
+            "-date",
+            "date",
+            "-price",
+            "price",
+            "event_type"
+          ],
+          "advanced": true,
+          "playground_hint": "-date newest first (default), date oldest first, -price highest first, price lowest first, event_type alphabetical"
+        }
+      ],
+      "tokens": {
+        "default": 20
       }
     },
     {
@@ -521,6 +606,26 @@
       }
     },
     {
+      "name": "listing_address",
+      "playground_id": "listing-address",
+      "label": "Unlock UPRN + Address",
+      "method": "POST",
+      "path": "/listing-address/",
+      "params": [
+        {
+          "name": "listing_id",
+          "in": "body",
+          "type": "string",
+          "required": true,
+          "playground_hint": "The id field from a Live Listings result."
+        }
+      ],
+      "tokens": {
+        "default": 20
+      },
+      "idempotency_key": true
+    },
+    {
       "name": "property_lr_titles",
       "playground_id": "property-lr-titles",
       "label": "Land Registry Titles",
@@ -596,7 +701,7 @@
           "type": "string",
           "required": false,
           "advanced": true,
-          "playground_hint": "Search radius in kilometres (default: 0.5, max: 5)"
+          "playground_hint": "Default 0.5km, up to 5km. Larger values are rejected here; the API itself reduces them to 5km."
         },
         {
           "name": "days",
@@ -605,7 +710,7 @@
           "required": false,
           "pattern": "^\\d+$",
           "advanced": true,
-          "playground_hint": "Applications from last N days (default: 90, max: 365)"
+          "playground_hint": "Applications from last N days. Default 90. Values above 365 are reduced to 365."
         },
         {
           "name": "type",
@@ -757,7 +862,7 @@
           "in": "query",
           "type": "string",
           "required": false,
-          "playground_hint": "Search radius in kilometres — up to 10 (default: 3)"
+          "playground_hint": "Default 3km, up to 10km. Larger values are rejected here; the API itself reduces them to 10km."
         },
         {
           "name": "phase",
@@ -794,7 +899,7 @@
           "type": "number",
           "required": false,
           "advanced": true,
-          "playground_hint": "Max results — 1 to 50 (default: 20)"
+          "playground_hint": "Default 20, up to 50. Larger values are rejected here; the API itself reduces them to 50."
         }
       ],
       "tokens": {
@@ -840,7 +945,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -867,7 +972,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -894,7 +999,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -921,7 +1026,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -948,7 +1053,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -975,7 +1080,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1002,7 +1107,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1029,7 +1134,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1056,7 +1161,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1083,7 +1188,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1110,7 +1215,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1137,7 +1242,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1164,7 +1269,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1191,7 +1296,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1218,7 +1323,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 8km, max 25km."
+          "playground_hint": "Default 8km, up to 25km. Larger values are rejected here; the API itself reduces them to 25km."
         }
       ],
       "tokens": {
@@ -1245,7 +1350,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 1km, max 10km."
+          "playground_hint": "Default 1km, up to 10km. Larger values are rejected here; the API itself reduces them to 10km."
         }
       ],
       "tokens": {
@@ -1272,7 +1377,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 1km, max 10km."
+          "playground_hint": "Default 1km, up to 10km. Larger values are rejected here; the API itself reduces them to 10km."
         }
       ],
       "tokens": {
@@ -1299,7 +1404,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 1km, max 10km."
+          "playground_hint": "Default 1km, up to 10km. Larger values are rejected here; the API itself reduces them to 10km."
         }
       ],
       "tokens": {
@@ -1326,7 +1431,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 1km, max 10km."
+          "playground_hint": "Default 1km, up to 10km. Larger values are rejected here; the API itself reduces them to 10km."
         }
       ],
       "tokens": {
@@ -1353,7 +1458,7 @@
           "in": "query",
           "type": "number",
           "required": false,
-          "playground_hint": "Default 1km, max 10km."
+          "playground_hint": "Default 1km, up to 10km. Larger values are rejected here; the API itself reduces them to 10km."
         }
       ],
       "tokens": {
@@ -1399,7 +1504,7 @@
           "type": "number",
           "required": false,
           "advanced": true,
-          "playground_hint": "Search radius in km. Default 1, max 5."
+          "playground_hint": "Default 1km, up to 5km. Larger values are rejected here; the API itself reduces them to 5km."
         },
         {
           "name": "grade",
@@ -1528,14 +1633,6 @@
   ],
   "excluded": [
     {
-      "playground_id": "property-listings",
-      "reason": "enterprise"
-    },
-    {
-      "playground_id": "property-sale-events",
-      "reason": "enterprise"
-    },
-    {
       "playground_id": "property-sales",
       "reason": "admin_only",
       "note": "adminOnly in the Playground (hidden from customers). Excluded by the generic rule; requester confirmation pending as of 2026-09-17. To include, add the id to include_admin_only."
@@ -1550,10 +1647,6 @@
     },
     {
       "playground_id": "live-listings",
-      "reason": "enterprise"
-    },
-    {
-      "playground_id": "listing-address",
       "reason": "enterprise"
     },
     {

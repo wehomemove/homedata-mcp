@@ -139,3 +139,47 @@ def test_description_lint_rejects_an_extra_stale_figure():
     tokens = {"default": 25, "when": [{"param": "include_comps", "in": ["false"], "tokens": 10}]}
     assert check_description("Valuation. Costs 25 tokens; 10 tokens without comparables.", tokens) == []
     assert [c for c, _ in check_description("Valuation. Costs 25 tokens (was 5 tokens).", tokens)] == ["TOKENS_MISMATCH", "TOKENS_MISMATCH"]
+
+
+# ── POST bodies and the Idempotency-Key ──────────────────────────────────────
+#
+# The fixture manifest is GET-only, so these drive check_requests directly with
+# a POST tool shaped like listing_address.
+
+POST_MANIFEST = {"tools": [{
+    "name": "reveal", "method": "POST", "path": "/listing-address/", "idempotency_key": True,
+    "params": [{"name": "listing_id", "in": "body", "type": "string", "required": True}],
+}], "static_tools": []}
+GOOD_POST = {"method": "POST", "path": "/listing-address/", "query": {},
+             "body": {"listing_id": "listing_id-sample"}, "idempotency_key": True}
+
+
+def test_a_matching_post_is_green():
+    assert check_requests(POST_MANIFEST, {"reveal": [GOOD_POST]}) == []
+
+
+@pytest.mark.parametrize("change,expected", [
+    ({"body": None}, "BODY_MISSING"),
+    ({"body": {"listing_id": "listing_id-sample", "extra": 1}}, "BODY_UNEXPECTED"),
+    ({"body": {"listing_id": "something else"}}, "BODY_VALUE_MISMATCH"),
+    ({"body": ["listing_id-sample"]}, "BODY_NOT_AN_OBJECT"),
+    ({"idempotency_key": False}, "IDEMPOTENCY_KEY_MISSING"),
+    # A body key sent in the query string instead: the old GET-only builder's shape.
+    ({"body": None, "query": {"listing_id": "listing_id-sample"}}, "QUERY_UNEXPECTED"),
+], ids=["no body", "extra body key", "body value swapped", "body not an object", "no idempotency key", "body sent as query"])
+def test_each_body_drift_is_caught(change, expected):
+    codes = {v.code for v in check_requests(POST_MANIFEST, {"reveal": [{**GOOD_POST, **change}]})}
+    assert expected in codes, sorted(codes)
+
+
+def test_body_values_keep_their_json_type():
+    manifest = copy.deepcopy(POST_MANIFEST)
+    manifest["tools"][0]["params"][0]["type"] = "number"
+    sent = {**GOOD_POST, "body": {"listing_id": "2"}}  # sample_arguments gives the number 2
+    assert {v.code for v in check_requests(manifest, {"reveal": [sent]})} == {"BODY_VALUE_MISMATCH"}
+
+
+def test_a_get_tool_is_not_asked_for_an_idempotency_key():
+    recorded = {"address_find": [{"method": "GET", "path": "/address/find/", "query": {"q": "10 Downing Street"}}]}
+    manifest = {**MANIFEST, "tools": MANIFEST["tools"][:1], "static_tools": []}
+    assert check_requests(manifest, recorded) == []

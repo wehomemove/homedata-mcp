@@ -290,3 +290,42 @@ def test_tools_present_but_every_param_non_query_still_checks(tmp_path):
                  "static_tools": [], "excluded": [], "source": {}}
 
     assert guard.check(path_only, SCHEMA, {}) == []
+
+
+# ── body keys ────────────────────────────────────────────────────────────────
+#
+# listing_address was the first POST tool. Before it, the guard read only GET
+# query parameters, so a body key was skipped rather than compared — green for a
+# comparison it never made.
+
+LISTING_ADDRESS = {"name": "listing_address", "method": "POST", "path": "/listing-address/", "params": [
+    {"name": "listing_id", "in": "body", "type": "string", "required": True},
+]}
+
+
+def test_a_declared_body_key_is_green():
+    assert run({"tools": [LISTING_ADDRESS]}) == []
+
+
+def test_a_renamed_body_key_is_red():
+    manifest = {"tools": [copy.deepcopy(LISTING_ADDRESS)]}
+    manifest["tools"][0]["params"][0]["name"] = "listing"
+    problems = run(manifest)
+    assert len(problems) == 1
+    assert "listing_address.listing" in problems[0] and "body" in problems[0] and "listing_id" in problems[0]
+
+
+def test_a_body_key_sent_as_a_query_key_is_red():
+    # The generator's first draft did exactly this: listing_id in the query string,
+    # which loki's POST does not read.
+    manifest = {"tools": [copy.deepcopy(LISTING_ADDRESS)]}
+    manifest["tools"][0]["params"][0]["in"] = "query"
+    problems = run(manifest)
+    assert len(problems) == 1 and "not a declared query parameter of POST /listing-address/" in problems[0]
+
+
+def test_a_referenced_body_schema_is_followed():
+    tool = {**copy.deepcopy(LISTING_ADDRESS), "path": "/stand-in/referenced-body/"}
+    assert run({"tools": [tool]}) == []
+    tool["params"][0]["name"] = "nope"
+    assert len(run({"tools": [tool]})) == 1

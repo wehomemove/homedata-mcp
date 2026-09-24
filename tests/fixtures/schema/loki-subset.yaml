@@ -29,3 +29,32 @@ paths:
       - {in: path, name: uprn, required: true, schema: {type: integer}}
       - {in: path, name: tier, required: true, schema: {type: string}}
       - {in: query, name: with, required: false, schema: {type: string}}
+  # The real /listing-address/ body shape (live schema, 2026-09-24): listing_id
+  # in an application/json body, no query parameters at all.
+  /listing-address/:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listing_id:
+                  type: string
+              required:
+              - listing_id
+  # Not a live path: proves a $ref'd body is followed, not read as "no keys".
+  /stand-in/referenced-body/:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferencedBody'
+components:
+  schemas:
+    ReferencedBody:
+      type: object
+      properties:
+        listing_id:
+          type: string

@@ -7,6 +7,7 @@ against a mock transport and returns the HTTP requests each one sent.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -34,6 +35,8 @@ async def record_requests(
             "method": request.method,
             "path": request.url.path,
             "query": dict(request.url.params),
+            "body": json.loads(request.content) if request.content else None,
+            "idempotency_key": bool(request.headers.get("Idempotency-Key")),
         })
         return httpx.Response(200, json={})
 

@@ -6,7 +6,9 @@ MCP server can produce, so the Node package can run it too:
   1. the ``tools/list`` result, as MCP clients see it:
      ``[{"name", "description", "inputSchema"}, ...]``
   2. optionally, the HTTP requests each tool sent when called with
-     :func:`sample_arguments`: ``{tool_name: [{"method", "path", "query"}, ...]}``
+     :func:`sample_arguments`: ``{tool_name: [{"method", "path", "query"}, ...]}``,
+     plus ``"body"`` (the parsed JSON body, or null) and ``"idempotency_key"``
+     (true when a non-empty Idempotency-Key header was sent)
 
     python -m homedata_mcp.parity --tools-list tools.json [--requests requests.json]
 
@@ -17,7 +19,8 @@ Checked, each failing with its own violation code:
   - descriptions: present; every "N token(s)" figure matches the manifest's
     price (no missing figure, no extra figure); no banned wording
   - requests (when supplied): one request per tool, method, path with path
-    params substituted, query keys and values; static tools send nothing
+    params substituted, query keys and values, JSON body keys and values, and
+    an Idempotency-Key where the manifest asks for one; static tools send nothing
     beyond the requests the manifest declares for them
 
 WHAT THIS GUARD DOES NOT COVER:
@@ -237,6 +240,12 @@ def check_requests(manifest: Mapping[str, Any], recorded: Mapping[str, list[Mapp
                 path = path.replace("{" + p["name"] + "}", str(args[p["name"]]))
         want_query = {p["name"]: str(args[p["name"]]) for p in spec["params"] if p["in"] == "query"}
         have_query = {k: str(v) for k, v in (req.get("query") or {}).items()}
+        # Body values keep their JSON types: "2" and 2 are different requests.
+        want_body = {p["name"]: args[p["name"]] for p in spec["params"] if p["in"] == "body"}
+        have_body = req.get("body") or {}
+        if not isinstance(have_body, dict):
+            out.append(Violation("BODY_NOT_AN_OBJECT", name, f"sent {type(have_body).__name__}"))
+            have_body = {}
 
         if req.get("method", "").upper() != spec["method"]:
             out.append(Violation("METHOD_MISMATCH", name, f"manifest {spec['method']}, sent {req.get('method')}"))
@@ -249,6 +258,15 @@ def check_requests(manifest: Mapping[str, Any], recorded: Mapping[str, list[Mapp
         for k in sorted(set(want_query) & set(have_query)):
             if want_query[k] != have_query[k]:
                 out.append(Violation("QUERY_VALUE_MISMATCH", name, f"{k}: expected {want_query[k]!r}, sent {have_query[k]!r}"))
+        for k in sorted(set(want_body) - set(have_body)):
+            out.append(Violation("BODY_MISSING", name, k))
+        for k in sorted(set(have_body) - set(want_body)):
+            out.append(Violation("BODY_UNEXPECTED", name, k))
+        for k in sorted(set(want_body) & set(have_body)):
+            if want_body[k] != have_body[k]:
+                out.append(Violation("BODY_VALUE_MISMATCH", name, f"{k}: expected {want_body[k]!r}, sent {have_body[k]!r}"))
+        if spec.get("idempotency_key") and not req.get("idempotency_key"):
+            out.append(Violation("IDEMPOTENCY_KEY_MISSING", name, "the route requires an Idempotency-Key header"))
 
     for spec in manifest["static_tools"]:
         declared = {(r["method"], r["path"]) for r in spec.get("http_requests", [])}
@@ -266,7 +284,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = argparse.ArgumentParser(prog="python -m homedata_mcp.parity", description=__doc__.splitlines()[0])
     parser.add_argument("--tools-list", required=True, help="JSON file: the server's tools/list result (list, or {tools: [...]})")
-    parser.add_argument("--requests", help="JSON file: {tool_name: [{method, path, query}]}")
+    parser.add_argument("--requests", help="JSON file: {tool_name: [{method, path, query, body, idempotency_key}]}")
     args = parser.parse_args(argv)
 
     manifest = load_manifest()

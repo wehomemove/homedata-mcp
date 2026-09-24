@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Does every query key in the manifest exist in loki's live OpenAPI schema?
+"""Does every query and body key in the manifest exist in loki's live OpenAPI schema?
 
 Three things compare the MCP surface with something, and until this one none of
 them compared it with what loki actually accepts:
@@ -40,7 +40,8 @@ WHAT THIS GUARD DOES NOT COVER:
     is check_drift's and the parity guard's ground.
   - Whether loki HONOURS a declared key. Declared and ignored is possible, and
     this guard would not see it.
-  - Request bodies: every offered tool is GET today.
+  - Body keys are read from the application/json requestBody only, one level
+    deep: a nested object's own keys are not compared.
 """
 
 from __future__ import annotations
@@ -138,19 +139,46 @@ def _normalise(path: str) -> str:
     return re.sub(r"\{[^}]+\}", "{}", path.rstrip("/"))
 
 
-def schema_query_keys(schema: dict[str, Any], path: str) -> set[str] | None:
-    """Declared GET query parameters for a manifest path, or None if not found."""
+def _operation(schema: dict[str, Any], path: str, method: str) -> dict[str, Any] | None:
     wanted = _normalise(path)
     for candidate, operations in schema["paths"].items():
-        if _normalise(candidate) != wanted:
-            continue
-        get = (operations or {}).get("get") or {}
-        return {
-            parameter["name"]
-            for parameter in get.get("parameters", [])
-            if isinstance(parameter, dict) and parameter.get("in") == "query"
-        }
+        if _normalise(candidate) == wanted:
+            return (operations or {}).get(method.lower()) or {}
     return None
+
+
+def _resolve(schema: dict[str, Any], node: Any) -> Any:
+    ref = node.get("$ref") if isinstance(node, dict) else None
+    if not ref:
+        return node
+    if not ref.startswith("#/"):
+        raise Unreachable(f"cannot follow the external reference {ref}")
+    target: Any = schema
+    for part in ref[2:].split("/"):
+        target = target[part]
+    return target
+
+
+def schema_query_keys(schema: dict[str, Any], path: str, method: str = "GET") -> set[str] | None:
+    """Declared query parameters of one operation, or None if the path is not found."""
+    operation = _operation(schema, path, method)
+    if operation is None:
+        return None
+    return {
+        parameter["name"]
+        for parameter in operation.get("parameters", [])
+        if isinstance(parameter, dict) and parameter.get("in") == "query"
+    }
+
+
+def schema_body_keys(schema: dict[str, Any], path: str, method: str) -> set[str] | None:
+    """Declared JSON body properties of one operation, or None if the path is not found."""
+    operation = _operation(schema, path, method)
+    if operation is None:
+        return None
+    body = _resolve(schema, operation.get("requestBody") or {})
+    json_schema = _resolve(schema, ((body.get("content") or {}).get("application/json") or {}).get("schema") or {})
+    return set((json_schema.get("properties") or {}).keys())
 
 
 def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tuple[str, str], dict[str, str]]) -> list[str]:
@@ -174,10 +202,14 @@ def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tup
     used: set[tuple[str, str]] = set()
 
     for tool in manifest["tools"]:
-        declared = schema_query_keys(schema, tool["path"])
+        declared_in = {
+            "query": schema_query_keys(schema, tool["path"], tool["method"]),
+            "body": schema_body_keys(schema, tool["path"], tool["method"]),
+        }
         for param in tool["params"]:
-            if param["in"] != "query":
+            if param["in"] not in declared_in:
                 continue
+            declared = declared_in[param["in"]]
             key = (tool["name"], param["name"])
             if key in exceptions:
                 used.add(key)
@@ -190,7 +222,7 @@ def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tup
                 )
             elif param["name"] not in declared:
                 problems.append(
-                    f"{tool['name']}.{param['name']}: not a declared parameter of {tool['path']} "
+                    f"{tool['name']}.{param['name']}: not a declared {param['in']} parameter of {tool['method']} {tool['path']} "
                     f"(declared: {', '.join(sorted(declared)) or 'none'})"
                 )
 
@@ -250,8 +282,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    checked = sum(1 for tool in manifest["tools"] for p in tool["params"] if p["in"] == "query")
-    print(f"in step: {checked} query keys across {len(manifest['tools'])} tools are declared or cited")
+    checked = sum(1 for tool in manifest["tools"] for p in tool["params"] if p["in"] in ("query", "body"))
+    print(f"in step: {checked} query and body keys across {len(manifest['tools'])} tools are declared or cited")
     return 0
 
 

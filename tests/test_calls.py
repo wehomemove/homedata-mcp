@@ -100,3 +100,20 @@ def test_one_of_an_alternative_group_is_required():
         calls.build_request(spec("crime"), {})
     assert any("one of postcode or lat" in p for p in exc.value.problems)
     calls.build_request(spec("crime"), {"postcode": "SW1A 2AA"})
+
+
+def test_a_post_tool_sends_its_arguments_as_a_json_body():
+    req = calls.build_request(spec("listing_address"), {"listing_id": "7f9200c5-93be-487a-befa-26aa8667b3e4"})
+    assert (req.method, req.path, req.query) == ("POST", "/listing-address/", {})
+    assert req.body == {"listing_id": "7f9200c5-93be-487a-befa-26aa8667b3e4"}
+
+
+def test_each_send_of_an_idempotent_request_gets_a_fresh_key():
+    req = calls.build_request(spec("listing_address"), {"listing_id": "x"})
+    first, second = req.headers()["Idempotency-Key"], req.headers()["Idempotency-Key"]
+    assert first and second and first != second
+
+
+def test_a_get_tool_sends_no_body_and_no_idempotency_key():
+    req = calls.build_request(spec("property_listings"), {"uprn": "100040253100"})
+    assert req.query == {"uprn": "100040253100"} and req.body is None and req.headers() == {}

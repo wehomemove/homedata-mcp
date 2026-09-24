@@ -47,7 +47,9 @@ class ManifestTool(Tool):
             # Refused here: an invalid request can still be a charged one.
             raise ToolError(f"{self.name}: {exc}") from None
 
-        response = await self.client.send(request.method, request.path, params=request.query)
+        response = await self.client.send(
+            request.method, request.path, params=request.query, json=request.body, headers=request.headers()
+        )
         return ToolResult(
             content=[TextContent(type="text", text=json.dumps(response.body, ensure_ascii=False, indent=2))],
             structured_content=response.body if isinstance(response.body, dict) else {"data": response.body},

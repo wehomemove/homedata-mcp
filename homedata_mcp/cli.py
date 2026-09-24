@@ -94,7 +94,9 @@ async def _run(spec: dict[str, Any], args: argparse.Namespace) -> int:
         return 2
 
     try:
-        response = await client.send(request.method, request.path, params=request.query)
+        response = await client.send(
+            request.method, request.path, params=request.query, json=request.body, headers=request.headers()
+        )
     finally:
         await client.aclose()
 

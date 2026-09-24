@@ -29,6 +29,12 @@
       }
     ]
   },
+  "idempotency_key": {
+    "ids": [
+      "listing-address"
+    ],
+    "_source": "thor DeveloperController playground proxy: 'listing-address' => ['method' => 'POST', 'idempotent' => true] sends a fresh UUID Idempotency-Key per call; loki's schema says the route requires one"
+  },
   "include_admin_only": [],
   "exclusion_notes": {
     "property-sales": "adminOnly in the Playground (hidden from customers). Excluded by the generic rule; requester confirmation pending as of 2026-09-17. To include, add the id to include_admin_only."

@@ -130,12 +130,14 @@ const toolName = (id) => id.replace(/-/g, '_');
 const templ = (path) => path.replace(/:(\w+)/g, '{$1}');
 const DIGITS = data.NUMERIC_PARAM_NAMES; // the Playground strips non-digits from these
 
-function param(p) {
+// POST params travel as a JSON body, as the Playground's proxy sends them
+// (thor DeveloperController: "POST endpoints take a JSON body").
+function param(p, method) {
     const values = p.options ? p.options.map((o) => o.value ?? o)
         : p.optionGroups ? p.optionGroups.flatMap((g) => g.options.map((o) => o.value)) : null;
     const out = {
         name: p.name,
-        in: p.inPath ? 'path' : 'query',
+        in: p.inPath ? 'path' : method === 'POST' ? 'body' : 'query',
         type: p.type === 'number' ? 'number' : 'string',
         required: Boolean(p.required),
     };
@@ -178,7 +180,8 @@ for (const e of data.ENDPOINTS) {
         continue;
     }
     if (data.ENDPOINT_CREDIT_PENCE[e.id] != null) die(`${e.id} is billed in reveal credits; the manifest has no credit model`);
-    const params = (e.params ?? []).map(param).concat(CONFIG.param_additions[e.id] ?? []);
+    if (!['GET', 'POST'].includes(e.method)) die(`${e.id} uses ${e.method}; the manifest knows GET and POST only`);
+    const params = (e.params ?? []).map((p) => param(p, e.method)).concat(CONFIG.param_additions[e.id] ?? []);
     const tool = {
         name: toolName(e.id),
         playground_id: e.id,
@@ -188,6 +191,7 @@ for (const e of data.ENDPOINTS) {
         params,
         tokens: tokens(e),
     };
+    if (CONFIG.idempotency_key.ids.includes(e.id)) tool.idempotency_key = true;
     const flood = params.find((p) => p.name === 'risk_type')?.enum?.filter((v) => v.startsWith('flood:'));
     if (e.id === 'risks' && flood?.length) {
         tool.path_rules = [{ param: 'risk_type', prefix: 'flood:', path: '/risks/flood/{suffix}/' }];
@@ -200,6 +204,8 @@ const dupes = names.filter((n, i) => names.indexOf(n) !== i);
 if (dupes.length) die(`duplicate tool names: ${dupes}`);
 const bad = names.filter((n) => !/^[a-zA-Z0-9_-]{1,64}$/.test(n));
 if (bad.length) die(`tool names outside the MCP name grammar: ${bad}`);
+const staleIdem = CONFIG.idempotency_key.ids.filter((id) => !tools.some((t) => t.playground_id === id && t.method === 'POST'));
+if (staleIdem.length) die(`idempotency_key names ${staleIdem}, which is not an offered POST tool`);
 
 const manifest = {
     schema_version: 1,
@@ -213,6 +219,7 @@ const manifest = {
     rules: {
         offered: 'Playground ENDPOINTS entries with a path, not enterprise:true, not adminOnly:true',
         tool_name: 'snake_case of the Playground id (hyphens become underscores). A design choice: the Playground has ids and labels, no tool names.',
+        request_body: 'A POST tool sends its non-path params as a JSON body (in: body). idempotency_key: true means each call carries a fresh UUID Idempotency-Key header.',
         base_url: 'Paths are relative to https://api.homedata.co.uk and also answer under /api/.',
     },
     tools,

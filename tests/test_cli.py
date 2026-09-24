@@ -56,6 +56,30 @@ def test_a_command_sends_the_manifest_request(monkeypatch, capsys):
     assert "authorization" not in sent[0].headers, "a keyless free call must not send a key header"
 
 
+def test_a_post_command_sends_a_json_body_and_an_idempotency_key(monkeypatch, capsys):
+    # The server path is covered by the parity guard; the CLI builds its own send.
+    sent: list[httpx.Request] = []
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(200, json={"uprn": 100040253100}, headers={"X-Tokens-Charged": "20"})
+
+    real = cli.HomedataClient
+
+    class Recording(real):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs, transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(cli, "HomedataClient", Recording)
+    monkeypatch.setenv("HOMEDATA_API_KEY", "cli-test")
+    assert cli.main(["listing_address", "--listing-id", "7f9200c5-93be-487a-befa-26aa8667b3e4"]) == 0
+    assert len(sent) == 1
+    req = sent[0]
+    assert (req.method, req.url.path, dict(req.url.params)) == ("POST", "/listing-address/", {})
+    assert json.loads(req.content) == {"listing_id": "7f9200c5-93be-487a-befa-26aa8667b3e4"}
+    assert req.headers.get("Idempotency-Key")
+
+
 def test_a_keyed_tool_needs_a_key(monkeypatch, capsys):
     monkeypatch.delenv("HOMEDATA_API_KEY", raising=False)
     assert cli.main(["property_core", "--uprn", "100023336956"]) == 2

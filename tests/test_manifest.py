@@ -56,7 +56,11 @@ def test_static_helpers_are_structurally_unbilled():
 
 def test_tool_shapes_are_consistent():
     for tool in MANIFEST["tools"]:
-        assert tool["method"] == "GET", tool["name"]
+        assert tool["method"] in ("GET", "POST"), tool["name"]
+        # A GET sends no body; a POST sends its arguments as one, as the Playground does.
+        wrong_place = "body" if tool["method"] == "GET" else "query"
+        assert not [p for p in tool["params"] if p["in"] == wrong_place], tool["name"]
+        assert not tool.get("idempotency_key") or tool["method"] == "POST", tool["name"]
         tokens = tool["tokens"]
         assert isinstance(tokens["default"], int) and tokens["default"] >= 0, tool["name"]
         in_template = set(re.findall(r"\{(\w+)\}", tool["path"]))

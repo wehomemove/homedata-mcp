@@ -10,6 +10,7 @@ reach the API, because a rejected request can still be a charged one.
 from __future__ import annotations
 
 import math
+import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -31,9 +32,20 @@ class Request:
     method: str
     path: str
     query: dict[str, str]
+    # A POST tool's arguments, sent as JSON with their own types (not query strings).
+    body: dict[str, Any] | None = None
+    # True when the route wants an Idempotency-Key; the key itself is minted per
+    # send by :meth:`headers`, so building a request stays deterministic.
+    idempotency_key: bool = False
+
+    def headers(self) -> dict[str, str]:
+        return {"Idempotency-Key": str(uuid.uuid4())} if self.idempotency_key else {}
 
     def as_dict(self) -> dict[str, Any]:
-        return {"method": self.method, "path": self.path, "query": dict(self.query)}
+        out: dict[str, Any] = {"method": self.method, "path": self.path, "query": dict(self.query)}
+        if self.body is not None:
+            out["body"] = dict(self.body)
+        return out
 
 
 def tools() -> list[dict[str, Any]]:
@@ -163,6 +175,7 @@ def build_request(spec: Mapping[str, Any], arguments: Mapping[str, Any]) -> Requ
     supplied = validate_arguments(spec, arguments)
     path = spec["path"]
     query: dict[str, str] = {}
+    body: dict[str, Any] = {}
 
     for param in spec["params"]:
         name = param["name"]
@@ -171,6 +184,8 @@ def build_request(spec: Mapping[str, Any], arguments: Mapping[str, Any]) -> Requ
         text = _as_query_value(supplied[name])
         if param["in"] == "path":
             path = path.replace("{" + name + "}", quote(text, safe=""))
+        elif param["in"] == "body":
+            body[name] = supplied[name]
         else:
             query[name] = text
 
@@ -181,7 +196,13 @@ def build_request(spec: Mapping[str, Any], arguments: Mapping[str, Any]) -> Requ
             path = rule["path"].replace("{suffix}", quote(suffix, safe=""))
             query.pop(rule["param"], None)
 
-    return Request(method=spec["method"], path=path, query=query)
+    return Request(
+        method=spec["method"],
+        path=path,
+        query=query,
+        body=body if spec["method"] == "POST" else None,
+        idempotency_key=bool(spec.get("idempotency_key")),
+    )
 
 
 # ── the input schema an MCP client sees ──────────────────────────────────────

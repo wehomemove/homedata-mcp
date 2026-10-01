@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -117,6 +118,21 @@ def test_changed_hash_alone_is_a_note_not_drift():
 def test_qualified_free_price_is_not_free():
     # "free" with a qualifier is a real price rule this parser must refuse to read as 0.
     qualified = SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n- Weight: free for the first request, then 1 token\n")
+    with pytest.raises(check_drift.FormatError):
+        check_drift.compare(MANIFEST, qualified)
+
+
+@pytest.mark.parametrize("wording", ["free", "free — no tokens spent", "free, no tokens spent"])
+def test_each_published_free_wording_reads_as_free(wording):
+    # thor has published all three; the comma form arrived by 2026-10-01 and made
+    # the guard exit 2 (could not look) on every run until this pattern existed.
+    surface = re.sub(r"- Weight: free[^\n]*", f"- Weight: {wording}", SURFACE)
+    drift, _ = check_drift.compare(MANIFEST, surface)
+    assert drift == []
+
+
+def test_a_comma_qualified_free_price_is_still_refused():
+    qualified = re.sub(r"- Weight: free[^\n]*", "- Weight: free, then 1 token", SURFACE)
     with pytest.raises(check_drift.FormatError):
         check_drift.compare(MANIFEST, qualified)
 

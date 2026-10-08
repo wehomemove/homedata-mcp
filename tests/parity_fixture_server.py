@@ -17,7 +17,7 @@ from fastmcp.tools.tool_transform import ArgTransform
 from homedata_mcp.client import HomedataClient
 
 DESCRIPTIONS = {
-    "address_find": "Find UK addresses and their UPRNs from free text. Costs 2 tokens.",
+    "address_match": "Find UK addresses and their UPRNs from free text. Costs 5 tokens.",
     "calc_mortgage": "Monthly mortgage repayments. Free: no tokens spent.",
     "property_base": "Property — Base tier: rooms, EPC, last sale and more. Costs 10 tokens.",
     "property_custom": "Pick the property facts you need with add-ons. Costs 1 token plus each add-on (risks is 7 tokens).",
@@ -33,7 +33,7 @@ def build(
     add_enterprise_tool: bool = False,
     add_unknown_tool: bool = False,
     descriptions: dict[str, str] | None = None,
-    address_find_query_key: str = "q",
+    address_match_query_key: str = "address",
     base_path: str = "/property/{uprn}/base/",
     base_method: str = "GET",
     risks_enum: tuple[str, ...] = ("all", "flood"),
@@ -53,9 +53,9 @@ def build(
             return fn
         return register
 
-    @tool("address_find")
-    async def address_find(q: str) -> dict[str, Any]:
-        return await client.get("/address/find/", params={address_find_query_key: q})
+    @tool("address_match")
+    async def address_match(address: str, postcode: str) -> dict[str, Any]:
+        return await client.get("/address/match/", params={address_match_query_key: address, "postcode": postcode})
 
     if base_method == "GET":
         @tool("property_base")
@@ -102,7 +102,7 @@ def build(
     @tool("start_homedata_signup")
     async def start_homedata_signup(email: str | None = None) -> dict[str, Any]:
         if signup_calls_api:
-            await client.get("/address/find/", params={"q": "10 Downing Street"})
+            await client.get("/address/match/", params={"address": "10 Downing Street", "postcode": "SW1A 2AA"})
         return {"signup_url": "https://homedata.co.uk/register"}
 
     if add_enterprise_tool:

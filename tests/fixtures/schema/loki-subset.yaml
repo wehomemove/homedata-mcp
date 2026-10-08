@@ -6,6 +6,12 @@ info:
   title: Stand-in
   version: 1.0.0
 paths:
+  # Address match contract supplied by qt_f18774b56780 (October 2026).
+  /address/match/:
+    get:
+      parameters:
+      - {in: query, name: address, required: true, schema: {type: string}}
+      - {in: query, name: postcode, required: true, schema: {type: string}}
   /calculators/mortgage/:
     get:
       parameters:

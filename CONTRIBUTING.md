@@ -83,7 +83,11 @@ Publishing needs a go from the product owner. When there is one:
    tag, the CHANGELOG entry is dated rather than "unreleased", the working tree
    is clean, the server matches the manifest, the manifest matches the published
    catalogue, every query key is one loki's schema declares, and regenerating
-   from the catalogue reproduces the committed manifest.
+   from the catalogue reproduces the committed manifest. That last gate ignores
+   the recorded thor commit alone: a newer thor commit that leaves the
+   catalogue byte-for-byte the same passes, and the gate names both commits.
+   Any other difference, including a catalogue change that leaves the tools
+   the same, still fails.
 
    It distinguishes **FAIL** ("determined to be wrong") from **UNDETERMINED**
    ("could not be checked" — no network, no thor checkout, a tool that would not

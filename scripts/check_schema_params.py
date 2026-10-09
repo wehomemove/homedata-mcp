@@ -33,8 +33,7 @@ of the footer in the same file, and a defect went through it for months.
 WHAT THIS GUARD DOES NOT COVER:
   - Key NAMES only. It does not check types, required-ness, enum values or what
     a parameter means, so a correctly named key carrying the wrong value passes.
-  - Keys loki accepts but does not declare. The schema under-declares in places
-    (/address/find/ is excluded from it on purpose), so an undeclared key is
+  - Keys loki accepts but does not declare. The schema under-declares in places, so an undeclared key is
     reported and needs a cited exception rather than being assumed wrong.
   - Path parameters and path shape. Only query keys are compared; a wrong path
     is check_drift's and the parity guard's ground.

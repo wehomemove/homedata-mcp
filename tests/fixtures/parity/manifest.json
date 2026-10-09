@@ -2,8 +2,8 @@
   "schema_version": 1,
   "source": {"repository": "fixture", "commit": "fixture"},
   "tools": [
-    {"name": "address_find", "playground_id": "address-find", "label": "Address Find", "method": "GET", "path": "/address/find/",
-     "params": [{"name": "q", "in": "query", "type": "string", "required": true}], "tokens": {"default": 2}},
+    {"name": "address_match", "playground_id": "address-match", "label": "Address Match", "method": "GET", "path": "/address/match/",
+     "params": [{"name": "address", "in": "query", "type": "string", "required": true}, {"name": "postcode", "in": "query", "type": "string", "required": true}], "tokens": {"default": 5}},
     {"name": "property_base", "playground_id": "property-base", "label": "Property — Base tier", "method": "GET", "path": "/property/{uprn}/base/",
      "params": [{"name": "uprn", "in": "path", "type": "string", "required": true, "pattern": "^\\d+$"}], "tokens": {"default": 10}},
     {"name": "risks", "playground_id": "risks", "label": "Environmental Risks", "method": "GET", "path": "/risks/{risk_type}/",

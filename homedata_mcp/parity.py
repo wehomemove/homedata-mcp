@@ -62,7 +62,7 @@ BANNED: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("portal names", re.compile(r"\b(?:rightmove|zoopla|onthemarket)\b", re.IGNORECASE)),
 )
 
-SAMPLE_VALUES = {"uprn": "100023336956", "postcode": "SW1A 2AA", "outcode": "SW1A", "q": "10 Downing Street"}
+SAMPLE_VALUES = {"uprn": "100023336956", "postcode": "SW1A 2AA", "outcode": "SW1A", "q": "10 Downing Street", "address": "10 Downing Street"}
 
 
 @dataclass(frozen=True)

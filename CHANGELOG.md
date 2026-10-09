@@ -7,7 +7,8 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [1.0.0] - 2026-10-09
 
-Address lookup now uses `/address/match/`, available to new API keys. Supply
+`address_find` is gone; use `address_match`. Address lookup now uses
+`/address/match/`, available to new API keys. Supply
 `address` and `postcode`; a match costs 5 tokens. HTTP 422 `no_match` and
 `multiple_matches` responses are returned as errors and spend no tokens.
 The manifest is regenerated from the current Playground catalogue.

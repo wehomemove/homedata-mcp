@@ -290,3 +290,12 @@ def test_tools_present_but_every_param_non_query_still_checks(tmp_path):
                  "static_tools": [], "excluded": [], "source": {}}
 
     assert guard.check(path_only, SCHEMA, {}) == []
+
+
+def test_address_match_keys_are_checked_without_an_exception():
+    manifest = json.loads((ROOT / "homedata_mcp" / "manifest" / "tools.json").read_text())
+    match = next(tool for tool in manifest["tools"] if tool["name"] == "address_match")
+    assert run({"tools": [match]}) == []
+    match["params"][0]["name"] = "q"
+    problems = run({"tools": [match]})
+    assert len(problems) == 1 and "address_match.q" in problems[0]

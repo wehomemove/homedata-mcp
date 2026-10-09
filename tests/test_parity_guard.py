@@ -57,23 +57,23 @@ DRIFTS = [
     ("dropped tool", {"omit": "risks"}, "TOOL_MISSING"),
     ("enterprise tool offered", {"add_enterprise_tool": True}, "EXCLUDED_TOOL_PRESENT"),
     ("tool not in the manifest", {"add_unknown_tool": True}, "TOOL_UNEXPECTED"),
-    ("wrong price", {"descriptions": {"address_find": "Find addresses. Costs 3 tokens."}}, "TOKENS_MISMATCH"),
+    ("wrong price", {"descriptions": {"address_match": "Find addresses. Costs 3 tokens."}}, "TOKENS_MISMATCH"),
     ("rule price missing", {"descriptions": {"risks": "Environmental risk. Costs 1 token."}}, "TOKENS_MISMATCH"),
     ("free tool not called free", {"descriptions": {"calc_mortgage": "Monthly mortgage repayments."}}, "TOKENS_MISMATCH"),
     ("add-on pricing not stated", {"descriptions": {"property_custom": "Property facts. Costs 1 token."}}, "TOKENS_MISMATCH"),
-    ("price on an unbilled helper", {"descriptions": {"start_homedata_signup": "Get a key. Costs 2 tokens."}}, "TOKENS_ON_UNBILLED_TOOL"),
-    ("calls as a price", {"descriptions": {"address_find": "Find addresses. Uses 2 API calls. Costs 2 tokens."}}, "BANNED_WORDING"),
-    ("scraped", {"descriptions": {"address_find": "Scraped addresses. Costs 2 tokens."}}, "BANNED_WORDING"),
-    ("VOA", {"descriptions": {"address_find": "Bands from the VOA. Costs 2 tokens."}}, "BANNED_WORDING"),
-    ("free tier", {"descriptions": {"address_find": "Included in the free tier. Costs 2 tokens."}}, "BANNED_WORDING"),
-    ("plan gating", {"descriptions": {"address_find": "On the Growth plan. Costs 2 tokens."}}, "BANNED_WORDING"),
-    ("portal name", {"descriptions": {"address_find": "Addresses from Rightmove. Costs 2 tokens."}}, "BANNED_WORDING"),
+    ("price on an unbilled helper", {"descriptions": {"start_homedata_signup": "Get a key. Costs 5 tokens."}}, "TOKENS_ON_UNBILLED_TOOL"),
+    ("calls as a price", {"descriptions": {"address_match": "Find addresses. Uses 2 API calls. Costs 5 tokens."}}, "BANNED_WORDING"),
+    ("scraped", {"descriptions": {"address_match": "Scraped addresses. Costs 5 tokens."}}, "BANNED_WORDING"),
+    ("VOA", {"descriptions": {"address_match": "Bands from the VOA. Costs 5 tokens."}}, "BANNED_WORDING"),
+    ("free tier", {"descriptions": {"address_match": "Included in the free tier. Costs 5 tokens."}}, "BANNED_WORDING"),
+    ("plan gating", {"descriptions": {"address_match": "On the Growth plan. Costs 5 tokens."}}, "BANNED_WORDING"),
+    ("portal name", {"descriptions": {"address_match": "Addresses from Rightmove. Costs 5 tokens."}}, "BANNED_WORDING"),
     ("required flipped", {"risks_uprn_required": True}, "REQUIRED_MISMATCH"),
     ("enum changed", {"risks_enum": ("all", "flood", "radon")}, "ENUM_MISMATCH"),
     ("type changed", {"mortgage_price_as_string": True}, "TYPE_MISMATCH"),
     ("extra parameter", {"custom_extra_param": True}, "PARAM_UNEXPECTED"),
-    ("query key renamed", {"address_find_query_key": "query"}, "QUERY_MISSING"),
-    ("query key renamed (sent side)", {"address_find_query_key": "query"}, "QUERY_UNEXPECTED"),
+    ("query key renamed", {"address_match_query_key": "query"}, "QUERY_MISSING"),
+    ("query key renamed (sent side)", {"address_match_query_key": "query"}, "QUERY_UNEXPECTED"),
     ("path changed", {"base_path": "/property/{uprn}/base"}, "PATH_MISMATCH"),
     ("method changed", {"base_method": "POST"}, "METHOD_MISMATCH"),
     ("two requests for one call", {"custom_two_requests": True}, "BINDING_EXTRA_REQUESTS"),
@@ -88,8 +88,8 @@ async def test_each_drift_is_caught(drift, expected):
 
 
 LOOKALIKES = [
-    ("a count of calls is not a price", "address_find", "Handy before making several calls. Costs 2 tokens."),
-    ("'on the market' is not a portal name", "address_find", "Addresses for homes on the market. Costs 2 tokens."),
+    ("a count of calls is not a price", "address_match", "Handy before making several calls. Costs 5 tokens."),
+    ("'on the market' is not a portal name", "address_match", "Addresses for homes on the market. Costs 5 tokens."),
     ("property tier names are product names", "property_base", "The Base tier of the property record. Costs 10 tokens."),
     ("add-on prices may be quoted", "property_custom", "Costs 1 token plus each add-on: epc is 1 token, risks is 7 tokens."),
 ]
@@ -102,7 +102,7 @@ async def test_legitimate_lookalikes_stay_green(tool, text):
 
 
 def test_param_missing_is_caught():
-    listed = [{"name": "address_find", "description": OVERLAY["address_find"], "inputSchema": {"type": "object", "properties": {}}}]
+    listed = [{"name": "address_match", "description": OVERLAY["address_match"], "inputSchema": {"type": "object", "properties": {}}}]
     manifest = {**MANIFEST, "tools": MANIFEST["tools"][:1], "static_tools": []}
     assert {v.code for v in check_listing(manifest, listed)} >= {"PARAM_MISSING", "REQUIRED_MISMATCH"}
 
@@ -110,7 +110,7 @@ def test_param_missing_is_caught():
 def test_query_value_swap_and_no_request_are_caught():
     manifest = {**MANIFEST, "static_tools": []}
     recorded = {
-        "address_find": [{"method": "GET", "path": "/address/find/", "query": {"q": "something else"}}],
+        "address_match": [{"method": "GET", "path": "/address/match/", "query": {"address": "something else", "postcode": "SW1A 2AA"}}],
         "property_base": [],
     }
     codes = {v.code for v in check_requests(manifest, recorded)}
@@ -118,7 +118,7 @@ def test_query_value_swap_and_no_request_are_caught():
 
 
 def test_api_prefix_is_the_same_path():
-    recorded = {"address_find": [{"method": "GET", "path": "/api/address/find/", "query": {"q": "10 Downing Street"}}]}
+    recorded = {"address_match": [{"method": "GET", "path": "/api/address/match/", "query": {"address": "10 Downing Street", "postcode": "SW1A 2AA"}}]}
     manifest = {**MANIFEST, "tools": MANIFEST["tools"][:1], "static_tools": []}
     assert check_requests(manifest, recorded) == []
 

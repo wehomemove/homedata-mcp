@@ -77,7 +77,7 @@ shows what a property has before you commit to a tier.
 <!-- BEGIN GENERATED: tools -->
 | Tool | Tokens | What it returns |
 |---|---|---|
-| `address_match` | 5 | Match a submitted UK street address and postcode to a UPRN. |
+| `address_match` | 5 | Match a submitted UK street address and postcode to a UPRN. A 200 response returns the address-level retrieve body plus address_resolution. |
 | `address_postcode` | 2 | List every registered address at a UK postcode, with the UPRN for each one. |
 | `amenities_all` | 5 | Every amenity group near a property in one response: food, education, healthcare, financial, civic, worship, culture, convenience, green spaces, transport and shops. |
 | `amenities_civic` | 1 | Civic places near a property: post offices, town halls, courthouses, fire and police stations, community centres. |

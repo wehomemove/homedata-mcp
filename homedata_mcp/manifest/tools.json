@@ -2,10 +2,10 @@
   "schema_version": 1,
   "source": {
     "repository": "wehomemove/thor",
-    "commit": "a30ce5397ce1a705d205bd3842658c784faa95f2",
+    "commit": "1e396e8309756f88ba36fce75be0d29d589aff91",
     "catalogue": "resources/js/Pages/Developer/Playground/Index.vue",
-    "catalogue_sha256": "1c41e672d87a4a35c6c46e450aa590d751fdb6b9e5e2939b1ef6b8cc617837d8",
-    "llms_full_api_surface_source_hash": "9405ecae9418e3ba0e6edc3f7732f2613fb5bc353e7bf428c60dcfdb90f151c5"
+    "catalogue_sha256": "0d14c743fec99010688a887a6685c4b1f8b829b61148b9146b9bc168b0661895",
+    "llms_full_api_surface_source_hash": "8e660fc7ae3a7ea28cb6adee5b5277ca7ed87f2170cf4e787ecc5f4f865501b9"
   },
   "rules": {
     "offered": "Playground ENDPOINTS entries with a path, not enterprise:true, not adminOnly:true",

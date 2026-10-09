@@ -91,8 +91,11 @@ Publishing needs a go from the product owner. When there is one:
    check that goes green because it could not check is worse than no check, and
    `--offline` can therefore never produce a GO.
 
-4. Push a tag `vX.Y.Z`. `.github/workflows/release.yml` builds and publishes
-   to PyPI through trusted publishing; no token is involved.
+4. Merging a `pyproject.toml` version change to `main` runs
+   `.github/workflows/release.yml`, verifies the tests, live catalogue and schema,
+   then builds and publishes to PyPI through trusted publishing. No token is
+   involved. A `vX.Y.Z` tag can also trigger the workflow; use only one trigger
+   for each version to avoid attempting to publish the same version twice.
 
 The check reports; it does not tag and it does not publish. Step 1 of this list
 is still yours, and so is the product owner's go.

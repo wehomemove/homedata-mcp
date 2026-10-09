@@ -179,6 +179,7 @@ for (const e of data.ENDPOINTS) {
     }
     if (data.ENDPOINT_CREDIT_PENCE[e.id] != null) die(`${e.id} is billed in reveal credits; the manifest has no credit model`);
     const params = (e.params ?? []).map(param).concat(CONFIG.param_additions[e.id] ?? []);
+    for (const p of params) p.in = CONFIG.param_locations?.[e.id]?.[p.name] ?? p.in;
     const tool = {
         name: toolName(e.id),
         playground_id: e.id,
@@ -187,6 +188,7 @@ for (const e of data.ENDPOINTS) {
         path: templ(e.path),
         params,
         tokens: tokens(e),
+        ...(CONFIG.idempotent_tools?.includes(e.id) ? { idempotency_key: true } : {}),
     };
     const flood = params.find((p) => p.name === 'risk_type')?.enum?.filter((v) => v.startsWith('flood:'));
     if (e.id === 'risks' && flood?.length) {

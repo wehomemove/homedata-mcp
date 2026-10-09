@@ -116,3 +116,29 @@ def test_every_argument_has_help_text(name):
     text = calls.param_text_for(name)
     missing = [p["name"] for p in spec["params"] if not text.get(p["name"])]
     assert missing == [], f"{name}: {missing}"
+
+
+@pytest.mark.parametrize('status,reason,charged', [(200, None, '5'), (422, 'no_match', '0'), (422, 'multiple_matches', '0')])
+async def test_address_match_preserves_resolution_and_charge(status, reason, charged):
+    sent = []
+    body = {'uprn': '100023336956', 'address_resolution': {'match': 'exact'}} if reason is None else {'reason': reason}
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(status, json=body, headers={'X-Tokens-Charged': charged})
+
+    client = HomedataClient(api_key='new-key', transport=httpx.MockTransport(handler))
+    server, _ = build_server(client)
+    try:
+        async with Client(server) as mcp:
+            result = await mcp.call_tool('address_match', {'address': '10 Downing Street', 'postcode': 'SW1A 2AA'}, raise_on_error=False)
+            assert result.is_error == (status == 422)
+            assert result.meta['homedata']['tokens_charged'] == charged
+            assert result.structured_content == (body if status == 200 else {'error': 'api_error', 'status_code': 422, 'detail': body})
+            for missing in ({'address': '10 Downing Street'}, {'postcode': 'SW1A 2AA'}):
+                assert (await mcp.call_tool('address_match', missing, raise_on_error=False)).is_error
+    finally:
+        await client.aclose()
+    assert len(sent) == 1
+    assert sent[0].url.path == '/address/match/'
+    assert dict(sent[0].url.params) == {'address': '10 Downing Street', 'postcode': 'SW1A 2AA'}

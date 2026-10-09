@@ -1,8 +1,10 @@
 name: Release homedata-mcp to PyPI
 
-# Triggers ONLY on tags shaped `v*` (e.g. v0.1.2). Commit pushes and PRs do not trigger this workflow.
+# Publish version changes only after they merge to main; tags remain supported.
 on:
   push:
+    branches: [main]
+    paths: [pyproject.toml]
     tags:
       - 'v*'
 
@@ -29,6 +31,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade build twine
+
+      - name: Install package and verification dependencies
+        run: python -m pip install '.[dev]'
+
+      - name: Verify release contents
+        run: |
+          python -m pytest -q
+          python scripts/readme_tools.py --check
+          python scripts/check_drift.py
+          python scripts/check_schema_params.py
+          python - <<'PY'
+          from scripts.release_check import gate_versions, gate_changelog, _packaged_version, PASS
+          for result in (gate_versions(), gate_changelog(_packaged_version())):
+              assert result.outcome == PASS, result
+          PY
 
       - name: Build sdist and wheel
         run: python -m build

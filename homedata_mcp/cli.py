@@ -4,7 +4,7 @@ Built from the same manifest as the MCP tools, so a command and its tool
 cannot drift apart: same names, same arguments, same requests, same prices.
 
     homedata tools                              list the tools and their prices
-    homedata address_find --q "10 Downing St"   run one
+    homedata address_match --address "10 Downing St" --postcode "SW1A 2AA"   run one
     homedata property_core --uprn 100023336956 --field epc.current_rating
 
 Reads HOMEDATA_API_KEY from the environment. The calculators need no key.
@@ -94,7 +94,8 @@ async def _run(spec: dict[str, Any], args: argparse.Namespace) -> int:
         return 2
 
     try:
-        response = await client.send(request.method, request.path, params=request.query)
+        response = await client.send(request.method, request.path, params=request.query,
+                                          json=request.body or None, idempotency_key=request.idempotency_key)
     finally:
         await client.aclose()
 

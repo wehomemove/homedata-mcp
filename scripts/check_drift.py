@@ -51,7 +51,7 @@ KNOWN_EXTRA_ENTRIES = {("GET", "/risks/flood/{layer}/"): "flood layers are reach
 
 WEIGHTS = (
     # Anchored: "free for the first request, then 1 token" must not read as free.
-    (re.compile(r"^free(?: — no tokens spent)?$"), lambda m: (0, False, None)),
+    (re.compile(r"^free(?: — no tokens spent|, no tokens spent)?$"), lambda m: (0, False, None)),
     (re.compile(r"^(\d+) tokens? for the base record plus"), lambda m: (int(m[1]), True, None)),
     # Two phrasings of the same risks price. thor reworded it on 2026-09-18 and
     # this parser refused the new one — correctly: it raises rather than guessing,

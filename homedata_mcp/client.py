@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from typing import Any, Mapping
+from uuid import uuid4
 
 import httpx
 
@@ -117,6 +118,7 @@ class HomedataClient:
         path: str,
         params: Mapping[str, Any] | None = None,
         json: Mapping[str, Any] | None = None,
+        idempotency_key: bool = False,
     ) -> ApiResponse:
         """Make one request and report status, body and headers.
 
@@ -125,7 +127,8 @@ class HomedataClient:
         """
         clean = {k: v for k, v in (params or {}).items() if v is not None} or None
         try:
-            resp = await self._client.request(method, path, params=clean, json=dict(json) if json else None)
+            resp = await self._client.request(method, path, params=clean, json=dict(json) if json else None,
+                                              headers={"Idempotency-Key": str(uuid4())} if idempotency_key else None)
         except httpx.TimeoutException:
             return ApiResponse(504, {"error": "timeout", "status_code": 504,
                                      "detail": f"Homedata API did not respond within {self.timeout}s"}, httpx.Headers())

@@ -33,7 +33,7 @@ INSTRUCTIONS = (
     "Homedata answers questions about UK property: addresses and UPRNs, EPC, council tax, "
     "sale history, planning, environmental risk, schools, broadband, crime, local amenities "
     "and area statistics.\n\n"
-    "Start with `address_find` to turn an address into a UPRN, then use the UPRN tools. "
+    "Start with `address_match` to match an address and postcode to a UPRN, then use the UPRN tools. "
     "Postcode and outcode tools cover the surrounding area.\n\n"
     "For a whole property, prefer one tier call over many small ones: `property_base` for the "
     "basics, `property_core` for the usual full picture, `property_complete` for everything. "

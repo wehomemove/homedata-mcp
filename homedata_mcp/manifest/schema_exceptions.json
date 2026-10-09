@@ -1,11 +1,5 @@
 [
   {
-    "tool": "address_find",
-    "param": "q",
-    "reason": "loki excludes /address/find/ from its OpenAPI schema on purpose while keeping the endpoint live, so no parameter of this path can be checked against the spec.",
-    "evidence": "loki core/api/views/elasticsearch/address_search.py:419 sets exclude=True with the comment 'Kept live for existing integrations, but hidden from the schema' (read by quinn/api-documentation, 2026-09-16). MEASURED 2026-09-17: GET /address/find/ answers 403 without a key, where an unrouted path answers 404."
-  },
-  {
     "tool": "calc_stamp_duty",
     "param": "country",
     "reason": "loki ignores this key, which is the same class of defect as term_years, but it cannot mislead while the catalogue's enum offers only 'england': every accepted value is the one loki assumes. The exception asserts that enum, so it fails the moment someone adds Scotland or Wales rather than relying on them to read this file.",

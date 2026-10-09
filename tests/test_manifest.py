@@ -56,7 +56,7 @@ def test_static_helpers_are_structurally_unbilled():
 
 def test_tool_shapes_are_consistent():
     for tool in MANIFEST["tools"]:
-        assert tool["method"] == "GET", tool["name"]
+        assert tool["method"] in {"GET", "POST"}, tool["name"]
         tokens = tool["tokens"]
         assert isinstance(tokens["default"], int) and tokens["default"] >= 0, tool["name"]
         in_template = set(re.findall(r"\{(\w+)\}", tool["path"]))

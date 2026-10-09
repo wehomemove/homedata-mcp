@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import quote
 
@@ -31,6 +31,8 @@ class Request:
     method: str
     path: str
     query: dict[str, str]
+    body: dict[str, str] = field(default_factory=dict)
+    idempotency_key: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         return {"method": self.method, "path": self.path, "query": dict(self.query)}
@@ -163,6 +165,7 @@ def build_request(spec: Mapping[str, Any], arguments: Mapping[str, Any]) -> Requ
     supplied = validate_arguments(spec, arguments)
     path = spec["path"]
     query: dict[str, str] = {}
+    body: dict[str, str] = {}
 
     for param in spec["params"]:
         name = param["name"]
@@ -171,6 +174,8 @@ def build_request(spec: Mapping[str, Any], arguments: Mapping[str, Any]) -> Requ
         text = _as_query_value(supplied[name])
         if param["in"] == "path":
             path = path.replace("{" + name + "}", quote(text, safe=""))
+        elif param["in"] == "body":
+            body[name] = text
         else:
             query[name] = text
 
@@ -181,7 +186,8 @@ def build_request(spec: Mapping[str, Any], arguments: Mapping[str, Any]) -> Requ
             path = rule["path"].replace("{suffix}", quote(suffix, safe=""))
             query.pop(rule["param"], None)
 
-    return Request(method=spec["method"], path=path, query=query)
+    return Request(method=spec["method"], path=path, query=query, body=body,
+                   idempotency_key=spec.get("idempotency_key", False))
 
 
 # ── the input schema an MCP client sees ──────────────────────────────────────

@@ -20,7 +20,7 @@ _spec.loader.exec_module(check_drift)
 SURFACE = (Path(__file__).parent / "fixtures" / "llms-full-api-surface.txt").read_text()
 MANIFEST = json.loads((ROOT / "homedata_mcp" / "manifest" / "tools.json").read_text())
 
-ADDRESS_FIND = "**GET /address/find/**\n- Weight: 2 tokens\n"
+ADDRESS_MATCH = "**GET /address/match/**\n- Weight: 5 tokens\n"
 
 
 def test_fixture_matches_the_committed_manifest():
@@ -36,22 +36,22 @@ def test_every_manifest_tool_was_parsed():
 
 
 def test_price_change_is_drift():
-    assert ADDRESS_FIND in SURFACE
-    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n- Weight: 3 tokens\n"))
+    assert ADDRESS_MATCH in SURFACE
+    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(ADDRESS_MATCH, "**GET /address/match/**\n- Weight: 3 tokens\n"))
     assert drift == [
-        "in the public catalogue, not in tools.json: GET /address/find/ (3 tokens)",
-        "in tools.json, not in the public catalogue: GET /address/find/ (2 tokens)",
+        "in the public catalogue, not in tools.json: GET /address/match/ (3 tokens)",
+        "in tools.json, not in the public catalogue: GET /address/match/ (5 tokens)",
     ]
 
 
 def test_removed_endpoint_is_drift():
-    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(ADDRESS_FIND, ""))
-    assert drift == ["in tools.json, not in the public catalogue: GET /address/find/ (2 tokens)"]
+    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(ADDRESS_MATCH, ""))
+    assert drift == ["in tools.json, not in the public catalogue: GET /address/match/ (5 tokens)"]
 
 
 def test_new_self_serve_endpoint_is_drift():
-    added = ADDRESS_FIND + "\n**GET /new-endpoint/**\n- Weight: 1 token\n"
-    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(ADDRESS_FIND, added))
+    added = ADDRESS_MATCH + "\n**GET /new-endpoint/**\n- Weight: 1 token\n"
+    drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(ADDRESS_MATCH, added))
     assert drift == ["in the public catalogue, not in tools.json: GET /new-endpoint/ (1 tokens)"]
 
 
@@ -79,8 +79,8 @@ def test_both_risks_phrasings_parse_to_the_same_price(weight):
     Both forms are anchored patterns, not one loose one: a pattern permissive
     enough to absorb any future rewording would also absorb a changed price.
     """
-    line = ADDRESS_FIND + f"\n**GET /risks/{{risk_type}}/**\n- Weight: {weight}\n"
-    surface = SURFACE.replace(ADDRESS_FIND, line)
+    line = ADDRESS_MATCH + f"\n**GET /risks/{{risk_type}}/**\n- Weight: {weight}\n"
+    surface = SURFACE.replace(ADDRESS_MATCH, line)
     _, entries = check_drift.parse_surface(surface)
     assert entries[("GET", "/risks/{risk_type}/", (1, False, 5))] >= 1
 
@@ -88,14 +88,14 @@ def test_both_risks_phrasings_parse_to_the_same_price(weight):
 def test_an_unreadable_weight_refuses_rather_than_guessing():
     # The failure mode this parser must never have: a price it cannot read
     # treated as a price it can. FormatError is the correct outcome.
-    broken = ADDRESS_FIND + "\n**GET /risks/{risk_type}/**\n- Weight: cheap for one, more for all\n"
+    broken = ADDRESS_MATCH + "\n**GET /risks/{risk_type}/**\n- Weight: cheap for one, more for all\n"
     with pytest.raises(check_drift.FormatError, match="unrecognised weight"):
-        check_drift.parse_surface(SURFACE.replace(ADDRESS_FIND, broken))
+        check_drift.parse_surface(SURFACE.replace(ADDRESS_MATCH, broken))
 
 
 def test_enterprise_entries_are_never_drift():
     # An enterprise endpoint, even written with a GET path and a price, is not offered.
-    heading = "### Enterprise — arranged directly (not self-serve)"
+    heading = "### Enterprise: arranged directly (not self-serve)"
     assert heading in SURFACE
     enterprise = heading + "\n\n**GET /live-listings/search/**\n- Weight: 5 tokens\n\n**Comparables** — on request\n- Purpose: x\n"
     drift, _ = check_drift.compare(MANIFEST, SURFACE.replace(heading, enterprise))
@@ -116,7 +116,7 @@ def test_changed_hash_alone_is_a_note_not_drift():
 
 def test_qualified_free_price_is_not_free():
     # "free" with a qualifier is a real price rule this parser must refuse to read as 0.
-    qualified = SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n- Weight: free for the first request, then 1 token\n")
+    qualified = SURFACE.replace(ADDRESS_MATCH, "**GET /address/match/**\n- Weight: free for the first request, then 1 token\n")
     with pytest.raises(check_drift.FormatError):
         check_drift.compare(MANIFEST, qualified)
 
@@ -131,8 +131,8 @@ def test_malformed_manifest_is_not_a_verdict(tmp_path):
 
 @pytest.mark.parametrize("text", [
     "no generated block here",
-    SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n- Weight: two tokens\n"),
-    SURFACE.replace(ADDRESS_FIND, "**GET /address/find/**\n"),
+    SURFACE.replace(ADDRESS_MATCH, "**GET /address/match/**\n- Weight: two tokens\n"),
+    SURFACE.replace(ADDRESS_MATCH, "**GET /address/match/**\n"),
 ], ids=["no block", "unreadable weight", "missing weight"])
 def test_unreadable_format_is_not_a_verdict(text):
     with pytest.raises(check_drift.FormatError):
@@ -143,7 +143,7 @@ def test_cli_exit_codes(tmp_path):
     good = tmp_path / "good.txt"
     good.write_text(SURFACE)
     drifted = tmp_path / "drifted.txt"
-    drifted.write_text(SURFACE.replace(ADDRESS_FIND, ""))
+    drifted.write_text(SURFACE.replace(ADDRESS_MATCH, ""))
     broken = tmp_path / "broken.txt"
     broken.write_text("nothing")
     assert check_drift.main(["--file", str(good)]) == 0

@@ -68,7 +68,7 @@ Windsurf, Cline, Continue.dev and Zed are at
 
 ## Using the tools
 
-Start with `address_find` to turn an address into a UPRN, then use the
+Start with `address_match` to match an address and postcode to a UPRN, then use the
 property tools with that UPRN. For a whole property, one tier call is cheaper
 than many small ones: `property_base`, then `property_core` (the usual full
 picture), then `property_complete`. `property_discovery` costs 1 token and
@@ -77,7 +77,7 @@ shows what a property has before you commit to a tier.
 <!-- BEGIN GENERATED: tools -->
 | Tool | Tokens | What it returns |
 |---|---|---|
-| `address_find` | 2 | Find UK addresses from free text: an address, a postcode or a place name. Returns matching addresses with their UPRN, which every property tool takes. |
+| `address_match` | 5 | Match a submitted UK street address and postcode to a UPRN. |
 | `address_postcode` | 2 | List every registered address at a UK postcode, with the UPRN for each one. |
 | `amenities_all` | 5 | Every amenity group near a property in one response: food, education, healthcare, financial, civic, worship, culture, convenience, green spaces, transport and shops. |
 | `amenities_civic` | 1 | Civic places near a property: post offices, town halls, courthouses, fire and police stations, community centres. |
@@ -118,6 +118,7 @@ shows what a property has before you commit to a tier.
 | `healthcare_hospitals` | 1 | Registered hospitals near a property, with name, address, postcode, region, distance and a link to the official register record. England only. |
 | `healthcare_pharmacies` | 1 | Pharmacies near a property, with name, address, phone and website where known. |
 | `listed_buildings` | 3 | Listed buildings within a radius of a postcode: Grade I, II* and II entries with name, location, listing date and a link to the official record. |
+| `listing_address` | 20 | Reveal a listing’s UPRN and full address using its listing UUID. |
 | `planning` | 5 | Planning applications near a postcode or coordinates: type, status, description and decision date, with filters for recency, type and status. |
 | `postcode_profile` | 1 | One-call summary of a postcode: deprivation, crime, average property price, nearby schools, transport and broadband. Cheaper than calling those tools separately. The first call for a postcode is slow, because the parts are gathered and combined when you ask for them; the result is then cached, so asking again for the same postcode is fast. Wait for the first call rather than retrying it — retrying abandons the work already in progress and starts it over. |
 | `price_distributions` | 1 | How property prices are spread across an outcode area: percentiles, median and transaction counts by property type. |
@@ -130,6 +131,7 @@ shows what a property has before you commit to a tier.
 | `property_custom` | 1 + add-ons | Build your own property record: the base record plus only the add-ons you ask for, so you pay for exactly what you use. Call property_discovery first to see which add-ons a property has. |
 | `property_discovery` | 1 | The cheap first call for a property: which data is available for it, what each add-on costs, and the shortcuts to each tier. Also the quickest way to check whether a UPRN is one we hold. |
 | `property_lr_titles` | 10 | Land Registry title records for a property: tenure, title number and registered owner where held. |
+| `property_sale_events` | 20 | Return the event timeline for a sale ID or listing UUID, optionally filtered and ordered. |
 | `risks` | 1; 5 when `risk_type` is all | Environmental risk screening for a property: flood, radon, noise, landfill, coal and other mining, invasive plants and air quality. Ask for one hazard, or for all of them in a single response. |
 | `schools` | 1 | Schools near a postcode, with Ofsted rating, phase, pupil numbers and distance, from the Department for Education register. England only. |
 | `solar` | 5 | Solar potential for a property: usable roof area, estimated yearly generation, savings, payback period and carbon saved. |
@@ -156,7 +158,7 @@ The package also installs `homedata`, built from the same tool list:
 
 ```bash
 homedata tools                                   # every tool and its price
-homedata address_find --q "10 Downing Street"
+homedata address_match --address "10 Downing Street" --postcode "SW1A 2AA"
 homedata property_core --uprn 100023336956 --field epc
 homedata calc_mortgage --price 300000 --deposit 30000 --rate 4.5 --term 25
 ```

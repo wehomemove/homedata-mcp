@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: 9405ecae9418e3ba0e6edc3f7732f2613fb5bc353e7bf428c60dcfdb90f151c5), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: 8e660fc7ae3a7ea28cb6adee5b5277ca7ed87f2170cf4e787ecc5f4f865501b9), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface: All Endpoints
 
 Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Except **All Property Listings**, which stays callable and token-metered for some accounts; its entry gives the path, parameters and weight those accounts use. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -321,7 +321,7 @@ Free calculators, no tokens spent. Use them anywhere.
 
 ### Address lookup
 
-Find an address, by query, postcode, or building.
+Match an address to a UPRN, or list a postcode.
 
 **GET /address/match/**
 - Weight: 5 tokens

@@ -6,7 +6,8 @@
  * Playground offers it).
  *
  *   node scripts/generate-manifest.mjs --thor <path to a thor clone> [--ref origin/main]
- *   node scripts/generate-manifest.mjs --thor <path> --check    exit 1 if tools.json is stale
+ *   node scripts/generate-manifest.mjs --thor <path> --check    exit 1 if tools.json is stale;
+ *                                                                the recorded thor commit alone does not count
  *   node scripts/generate-manifest.mjs --thor <path> --init-descriptions
  *
  * WHY LOCAL: thor is a private repository and this package is public, so CI
@@ -222,11 +223,27 @@ const manifest = {
     excluded,
 };
 
-const text = JSON.stringify(manifest, null, 2) + '\n';
+const render = (m) => JSON.stringify(m, null, 2) + '\n';
+const text = render(manifest);
 if (CHECK) {
+    // thor gets commits that do not touch the catalogue several times a day, so
+    // the stamp alone is not staleness. Render the generated manifest with the
+    // committed stamp and compare byte for byte: every other byte stays strict
+    // (hashes, tools, excluded, rules, key order, formatting).
     const current = existsSync(TOOLS_OUT) ? readFileSync(TOOLS_OUT, 'utf8') : '';
-    if (current !== text) { console.error(`tools.json is stale against thor ${commit}; regenerate`); process.exit(1); }
-    console.log(`tools.json is current against thor ${commit}`);
+    let recorded = null;
+    try { recorded = JSON.parse(current)?.source?.commit ?? null; } catch { /* unreadable: stale */ }
+    if (typeof recorded !== 'string' || !recorded) {
+        console.error(`tools.json is stale against thor ${commit}; it records no thor commit; regenerate`);
+        process.exit(1);
+    }
+    if (current !== render({ ...manifest, source: { ...manifest.source, commit: recorded } })) {
+        console.error(`tools.json is stale against thor ${commit}; recorded commit ${recorded}; regenerate`);
+        process.exit(1);
+    }
+    console.log(recorded === commit
+        ? `tools.json is current against thor ${commit}`
+        : `tools.json is current against thor ${commit}; only the recorded commit differs (committed ${recorded})`);
     process.exit(0);
 }
 mkdirSync(OUT_DIR, { recursive: true });

@@ -179,7 +179,6 @@ def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tup
     used: set[tuple[str, str]] = set()
 
     for tool in manifest["tools"]:
-        declared = schema_query_keys(schema, tool["path"], tool["method"])
         for param in tool["params"]:
             if param["in"] not in {"query", "body"}:
                 continue
@@ -256,8 +255,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    checked = sum(1 for tool in manifest["tools"] for p in tool["params"] if p["in"] == "query")
-    print(f"in step: {checked} query keys across {len(manifest['tools'])} tools are declared or cited")
+    checked = sum(1 for tool in manifest["tools"] for p in tool["params"] if p["in"] in {"query", "body"})
+    print(f"in step: {checked} query/body keys across {len(manifest['tools'])} tools are declared or cited")
     return 0
 
 

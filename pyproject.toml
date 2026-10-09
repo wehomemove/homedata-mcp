@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "homedata-mcp"
-version = "1.0.0"  # First catalogue-based release, including address match.
+version = "1.0.0"
 description = "MCP server and CLI for the Homedata UK property data API: addresses and UPRNs, EPC, council tax, planning, environmental risk, schools, broadband and more."
 readme = "README.md"
 requires-python = ">=3.10"

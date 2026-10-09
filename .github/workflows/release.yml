@@ -1,10 +1,8 @@
 name: Release homedata-mcp to PyPI
 
-# Publish version changes only after they merge to main; tags remain supported.
+# Publish deliberately by tagging after the full release check returns GO.
 on:
   push:
-    branches: [main]
-    paths: [pyproject.toml]
     tags:
       - 'v*'
 

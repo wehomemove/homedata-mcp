@@ -13,7 +13,7 @@ Address lookup now uses `/address/match/`, available to new API keys. Supply
 The manifest is regenerated from the current Playground catalogue.
 
 A rebuild. The tools are now exactly the self-serve endpoints of the Homedata
-Developer Playground, generated from its catalogue: 56 data tools plus the two
+Developer Playground, generated from its catalogue: 58 data tools plus the two
 signup helpers. This is a breaking release; the table below maps every 0.x tool.
 
 ### Changed
@@ -59,12 +59,21 @@ signup helpers. This is a breaking release; the table below maps every 0.x tool.
 | `get_demographics` | `demographics` |
 | `get_broadband` | `broadband` |
 | `get_postcode_profile` | `postcode_profile` |
-| `search_property_listings` | removed: listings are not offered through the MCP |
+| `search_property_listings` | removed: listing search is not offered; `listing_address` and `property_sale_events` accept IDs you already hold |
 | `get_property_sales` | removed: not offered through the MCP |
 | `get_comparables` | removed: not offered through the MCP |
 | `start_homedata_signup`, `check_homedata_api_key` | unchanged names |
 
 ### Added
+- `listing_address`: reveal a listing's UPRN and full address using a listing
+  UUID you already hold. This is the first POST tool; it sends a JSON body and
+  a fresh `Idempotency-Key`. The first reveal costs 20 tokens; subsequent
+  reveals by the same organisation are free.
+- `property_sale_events`: retrieve a timeline using a sale ID or listing UUID
+  you already hold, for 20 tokens. Both listing tools come from the regenerated
+  self-serve catalogue. The MCP does not offer listing search or provide these
+  IDs; use IDs obtained separately through listing API access.
+
 New tools for every other Playground endpoint: property attributes (rooms,
 roof, garden, parking, dimensions, land, construction, EPC renovations),
 `property_custom`, `property_lr_titles`, `address_postcode`, `deprivation`,

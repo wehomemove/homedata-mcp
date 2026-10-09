@@ -106,7 +106,7 @@ def test_the_live_manifest_only_fails_on_the_known_escapes():
     # catalogue stopped offering coordinates the endpoint never accepted, so the
     # exceptions became unused — which this guard reports rather than ignores.
     assert {(e["tool"], e["param"]) for e in exceptions.values()} == {
-        ("address_find", "q"), ("calc_stamp_duty", "country"),
+        ("calc_stamp_duty", "country"),
     }
     assert {tool["name"] for tool in manifest["tools"]}
 

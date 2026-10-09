@@ -139,3 +139,34 @@ def test_description_lint_rejects_an_extra_stale_figure():
     tokens = {"default": 25, "when": [{"param": "include_comps", "in": ["false"], "tokens": 10}]}
     assert check_description("Valuation. Costs 25 tokens; 10 tokens without comparables.", tokens) == []
     assert [c for c, _ in check_description("Valuation. Costs 25 tokens (was 5 tokens).", tokens)] == ["TOKENS_MISMATCH", "TOKENS_MISMATCH"]
+
+
+def _listing_post_case():
+    from homedata_mcp.manifest import load_manifest
+
+    spec = next(t for t in load_manifest()['tools'] if t['name'] == 'listing_address')
+    manifest = {'tools': [spec], 'static_tools': []}
+    request = {
+        'method': 'POST',
+        'path': '/listing-address/',
+        'query': {},
+        'body': {'listing_id': 'listing_id-sample'},
+        'idempotency_key': '390ec5da-c83c-46d3-9b39-2f0f0084a19e',
+    }
+    return manifest, request
+
+
+def test_post_without_body_is_caught():
+    manifest, request = _listing_post_case()
+    assert check_requests(manifest, {'listing_address': [request]}) == []
+    del request['body']
+    found = check_requests(manifest, {'listing_address': [request]})
+    assert [(v.code, v.tool) for v in found] == [('BODY_MISMATCH', 'listing_address')]
+
+
+def test_post_without_idempotency_key_is_caught():
+    manifest, request = _listing_post_case()
+    assert check_requests(manifest, {'listing_address': [request]}) == []
+    del request['idempotency_key']
+    found = check_requests(manifest, {'listing_address': [request]})
+    assert [(v.code, v.tool) for v in found] == [('IDEMPOTENCY_KEY_MISSING', 'listing_address')]

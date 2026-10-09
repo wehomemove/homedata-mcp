@@ -10,6 +10,8 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
+import json
+
 import httpx
 from fastmcp import Client, FastMCP
 
@@ -34,6 +36,8 @@ async def record_requests(
             "method": request.method,
             "path": request.url.path,
             "query": dict(request.url.params),
+            "body": json.loads(request.content) if request.content else {},
+            "idempotency_key": request.headers.get("Idempotency-Key"),
         })
         return httpx.Response(200, json={})
 

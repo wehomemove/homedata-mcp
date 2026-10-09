@@ -70,20 +70,20 @@ async def test_stdio_round_trip(fake_api, mode):
     async with Client(transport, **({"mode": mode} if mode else {})) as mcp:
         info = mcp.initialize_result.server_info if mode == "legacy" else mcp.server_info
         assert (info.name, info.version) == ("homedata", __version__)
-        assert mcp.instructions and "address_find" in mcp.instructions
+        assert mcp.instructions and "address_match" in mcp.instructions
 
         tools = await mcp.list_tools()
         expected = {t["name"] for t in MANIFEST["tools"]} | {t["name"] for t in MANIFEST["static_tools"]}
         assert {t.name for t in tools} == expected
 
-        result = await mcp.call_tool("address_find", {"q": "10 Downing Street"})
-        assert result.structured_content == {"echo": "/address/find/"}
+        result = await mcp.call_tool("address_match", {"address": "10 Downing Street", "postcode": "SW1A 2AA"})
+        assert result.structured_content == {"echo": "/address/match/"}
         assert result.meta["homedata"] == {"tokens_charged": "2", "tokens_balance": "998"}
 
         await mcp.call_tool("check_homedata_api_key", {})
 
     assert received == [{
-        "path": "/address/find/",
-        "query": {"q": "10 Downing Street"},
+        "path": "/address/match/",
+        "query": {"address": "10 Downing Street", "postcode": "SW1A 2AA"},
         "authorization": "Api-Key hk_test_smoke",
-    }], "expected exactly one API request, from address_find; the key check must send none"
+    }], "expected exactly one API request, from address_match; the key check must send none"

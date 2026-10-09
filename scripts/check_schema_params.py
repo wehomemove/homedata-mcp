@@ -40,7 +40,7 @@ WHAT THIS GUARD DOES NOT COVER:
     is check_drift's and the parity guard's ground.
   - Whether loki HONOURS a declared key. Declared and ignored is possible, and
     this guard would not see it.
-  - Request bodies: every offered tool is GET today.
+  - Idempotency headers (the server parity guard checks these).
 """
 
 from __future__ import annotations
@@ -138,13 +138,18 @@ def _normalise(path: str) -> str:
     return re.sub(r"\{[^}]+\}", "{}", path.rstrip("/"))
 
 
-def schema_query_keys(schema: dict[str, Any], path: str) -> set[str] | None:
-    """Declared GET query parameters for a manifest path, or None if not found."""
+def schema_query_keys(schema: dict[str, Any], path: str, method: str = "GET", location: str = "query") -> set[str] | None:
+    """Declared query or JSON body keys for a path and method, or None if absent."""
     wanted = _normalise(path)
     for candidate, operations in schema["paths"].items():
         if _normalise(candidate) != wanted:
             continue
-        get = (operations or {}).get("get") or {}
+        get = (operations or {}).get(method.lower()) or {}
+        if location == "body":
+            body = get.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema", {})
+            if "$ref" in body:
+                body = schema.get("components", {}).get("schemas", {}).get(body["$ref"].split("/")[-1], {})
+            return set(body.get("properties", {}))
         return {
             parameter["name"]
             for parameter in get.get("parameters", [])
@@ -174,10 +179,10 @@ def check(manifest: dict[str, Any], schema: dict[str, Any], exceptions: dict[tup
     used: set[tuple[str, str]] = set()
 
     for tool in manifest["tools"]:
-        declared = schema_query_keys(schema, tool["path"])
         for param in tool["params"]:
-            if param["in"] != "query":
+            if param["in"] not in {"query", "body"}:
                 continue
+            declared = schema_query_keys(schema, tool["path"], tool["method"], param["in"])
             key = (tool["name"], param["name"])
             if key in exceptions:
                 used.add(key)
@@ -250,8 +255,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    checked = sum(1 for tool in manifest["tools"] for p in tool["params"] if p["in"] == "query")
-    print(f"in step: {checked} query keys across {len(manifest['tools'])} tools are declared or cited")
+    checked = sum(1 for tool in manifest["tools"] for p in tool["params"] if p["in"] in {"query", "body"})
+    print(f"in step: {checked} query/body keys across {len(manifest['tools'])} tools are declared or cited")
     return 0
 
 

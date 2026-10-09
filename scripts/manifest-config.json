@@ -53,8 +53,16 @@
       "billable": false,
       "http_requests": [],
       "params": [],
-      "purpose": "Reports whether HOMEDATA_API_KEY is set and active. TARGET contract: must not spend tokens. As of 0.4.0 it calls /address/find/ (2 tokens); T2 decides how to meet the contract.",
+      "purpose": "Reports whether HOMEDATA_API_KEY is configured locally. Makes no API call and spends no tokens.",
       "stub_description": "Check whether a Homedata API key is configured for this server and what to do next if it is not."
     }
+  ],
+  "param_locations": {
+    "listing-address": {
+      "listing_id": "body"
+    }
+  },
+  "idempotent_tools": [
+    "listing-address"
   ]
 }

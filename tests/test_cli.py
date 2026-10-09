@@ -60,3 +60,28 @@ def test_a_keyed_tool_needs_a_key(monkeypatch, capsys):
     monkeypatch.delenv("HOMEDATA_API_KEY", raising=False)
     assert cli.main(["property_core", "--uprn", "100023336956"]) == 2
     assert "HOMEDATA_API_KEY is required" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('status,reason,charged', [(200, None, '5'), (422, 'no_match', '0'), (422, 'multiple_matches', '0')])
+def test_address_match_cli(monkeypatch, capsys, status, reason, charged):
+    sent = []
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(status, json={'reason': reason} if reason else {'uprn': '100023336956'}, headers={'X-Tokens-Charged': charged})
+
+    real = cli.HomedataClient
+
+    class Recording(real):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs, transport=httpx.MockTransport(handler))
+
+    monkeypatch.setattr(cli, 'HomedataClient', Recording)
+    monkeypatch.setenv('HOMEDATA_API_KEY', 'new-key')
+    assert cli.main(['address_match', '--address', '10 Downing Street', '--postcode', 'SW1A 2AA']) == (0 if status == 200 else 1)
+    out = capsys.readouterr()
+    assert f'tokens charged: {charged}' in out.err
+    assert len(sent) == 1 and sent[0].url.path == '/address/match/'
+    assert dict(sent[0].url.params) == {'address': '10 Downing Street', 'postcode': 'SW1A 2AA'}
+    if reason:
+        assert json.loads(out.out)['detail']['reason'] == reason

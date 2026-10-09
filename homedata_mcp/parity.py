@@ -235,6 +235,11 @@ def check_requests(manifest: Mapping[str, Any], recorded: Mapping[str, list[Mapp
         for p in spec["params"]:
             if p["in"] == "path":
                 path = path.replace("{" + p["name"] + "}", str(args[p["name"]]))
+        want_body = {p["name"]: str(args[p["name"]]) for p in spec["params"] if p["in"] == "body"}
+        if want_body != (req.get("body") or {}):
+            out.append(Violation("BODY_MISMATCH", name, f"expected {want_body}, sent {req.get('body')}"))
+        if spec.get("idempotency_key") and not req.get("idempotency_key"):
+            out.append(Violation("IDEMPOTENCY_KEY_MISSING", name, "POST requires an Idempotency-Key"))
         want_query = {p["name"]: str(args[p["name"]]) for p in spec["params"] if p["in"] == "query"}
         have_query = {k: str(v) for k, v in (req.get("query") or {}).items()}
 

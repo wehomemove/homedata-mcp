@@ -35,6 +35,24 @@ class ApiResponse:
     headers: Mapping[str, str]
 
 
+def error_guidance(status: int) -> str | None:
+    """What the model should tell the user when Homedata refuses or does not answer.
+
+    A rate limit, a low balance or an outage reads as a plain sentence instead of a raw
+    error. Validation errors (400, 401, 404, 422) carry their own detail and get none.
+    Kept word for word with errorGuidance in homedata-mcp-node.
+    """
+    if status == 429:
+        return ("Homedata's rate limit for this API key has been reached. Tell the user Homedata is busy right now "
+                "and to try again in a minute. Do not retry straight away.")
+    if status == 402:
+        return ("This Homedata account does not have enough balance for this call. Tell the user their Homedata "
+                "balance needs topping up before it can run.")
+    if status >= 500:
+        return "Homedata could not answer just now. Tell the user to try again shortly. Do not invent the missing data."
+    return None
+
+
 def _normalise_response(resp: httpx.Response) -> dict[str, Any]:
     """Return a JSON-serialisable dict from an httpx response.
 
@@ -48,9 +66,11 @@ def _normalise_response(resp: httpx.Response) -> dict[str, Any]:
         body = resp.text
 
     if resp.status_code >= 400:
+        message = error_guidance(resp.status_code)
         return {
             "error": "api_error",
             "status_code": resp.status_code,
+            **({"message": message} if message else {}),
             "detail": body,
         }
 
@@ -130,12 +150,13 @@ class HomedataClient:
             resp = await self._client.request(method, path, params=clean, json=dict(json) if json else None,
                                               headers={"Idempotency-Key": str(uuid4())} if idempotency_key else None)
         except httpx.TimeoutException:
-            return ApiResponse(504, {"error": "timeout", "status_code": 504,
+            return ApiResponse(504, {"error": "timeout", "status_code": 504, "message": error_guidance(504),
                                      "detail": f"Homedata API did not respond within {self.timeout}s"}, httpx.Headers())
         except httpx.HTTPError as exc:
             # 502, not 0: callers classify >= 400 as a failure, and a request that
             # never reached the API must not read as success.
-            return ApiResponse(502, {"error": "network_error", "status_code": 502, "detail": str(exc)}, httpx.Headers())
+            return ApiResponse(502, {"error": "network_error", "status_code": 502, "message": error_guidance(502),
+                                     "detail": str(exc)}, httpx.Headers())
         return ApiResponse(resp.status_code, _normalise_response(resp), resp.headers)
 
     async def get(
@@ -152,12 +173,14 @@ class HomedataClient:
             return {
                 "error": "timeout",
                 "status_code": 504,
+                "message": error_guidance(504),
                 "detail": f"Homedata API did not respond within {self.timeout}s",
             }
         except httpx.HTTPError as exc:
             return {
                 "error": "network_error",
                 "status_code": 0,
+                "message": error_guidance(502),
                 "detail": str(exc),
             }
         return _normalise_response(resp)
@@ -173,12 +196,14 @@ class HomedataClient:
             return {
                 "error": "timeout",
                 "status_code": 504,
+                "message": error_guidance(504),
                 "detail": f"Homedata API did not respond within {self.timeout}s",
             }
         except httpx.HTTPError as exc:
             return {
                 "error": "network_error",
                 "status_code": 0,
+                "message": error_guidance(502),
                 "detail": str(exc),
             }
         return _normalise_response(resp)

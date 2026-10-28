@@ -77,6 +77,10 @@ def param_text_for(tool_name: str) -> dict[str, str]:
 # ── argument validation ──────────────────────────────────────────────────────
 
 
+def _accepts_integer(param: Mapping[str, Any]) -> bool:
+    return param["type"] == "string" and param.get("pattern") == r"^\d+$"
+
+
 def _type_problem(param: Mapping[str, Any], value: Any) -> str | None:
     name, expected = param["name"], param["type"]
     if isinstance(value, bool):  # bool is an int in Python; never a valid API value here
@@ -86,6 +90,8 @@ def _type_problem(param: Mapping[str, Any], value: Any) -> str | None:
             return f"{name} must be a number"
         # Python's json accepts NaN and Infinity literals; they would be sent in the URL.
         return None if math.isfinite(value) else f"{name} must be a finite number"
+    if _accepts_integer(param) and isinstance(value, int) and value >= 0:
+        return None
     if not isinstance(value, str):
         return f"{name} must be a string"
     return None
@@ -198,6 +204,9 @@ def input_schema(spec: Mapping[str, Any], param_text: Mapping[str, str]) -> dict
     required: list[str] = []
     for param in spec["params"]:
         prop: dict[str, Any] = {"type": param["type"]}
+        if _accepts_integer(param):
+            prop["type"] = ["string", "integer"]
+            prop["minimum"] = 0
         if "enum" in param:
             prop["enum"] = list(param["enum"])
         if "pattern" in param:

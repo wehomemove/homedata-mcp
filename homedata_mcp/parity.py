@@ -183,7 +183,10 @@ def check_listing(manifest: Mapping[str, Any], listed: Iterable[Mapping[str, Any
 
         for p in sorted(set(params) & set(props)):
             types = _schema_types(props[p])
-            if types not in _TYPE_OK[params[p]["type"]]:
+            allowed_types = _TYPE_OK[params[p]["type"]]
+            if params[p]["type"] == "string" and params[p].get("pattern") == r"^\d+$":
+                allowed_types = [{"string", "integer"}]
+            if types not in allowed_types:
                 out.append(Violation("TYPE_MISMATCH", name, f"{p}: manifest {params[p]['type']}, server {sorted(types)}"))
             want_enum = set(params[p]["enum"]) if "enum" in params[p] else None
             have_enum = _schema_enum(props[p])

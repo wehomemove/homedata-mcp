@@ -61,7 +61,10 @@ async def test_invalid_arguments_never_reach_the_api():
     server, _ = build_server(client)
     try:
         async with Client(server) as mcp:
-            for arguments in ({"uprn": "not-digits"}, {}, {"uprn": "1", "nope": "x"}):
+            for arguments in (
+                *({"uprn": value} for value in ("not-digits", -1, 1.5, 1.0, True, False)),
+                {}, {"uprn": "1", "nope": "x"},
+            ):
                 result = await mcp.call_tool("property_core", arguments, raise_on_error=False)
                 assert result.is_error, arguments
             ok = await mcp.call_tool("risks", {"risk_type": "volcano", "uprn": "1"}, raise_on_error=False)
@@ -175,3 +178,45 @@ async def test_rental_appraisal_sends_json_body_and_reports_charge(arguments):
     assert not sent[0].url.query
     # Body values go out as strings; loki's rental view parses them with int(str(v)) / float(str(v)).
     assert json.loads(sent[0].content) == {k: str(v) for k, v in arguments.items()}
+
+
+@pytest.mark.parametrize("finder,arguments", [
+    ("address_match", {"address": "10 Downing Street", "postcode": "SW1A 2AA"}),
+    ("address_postcode", {"postcode": "SW1A 2AA"}),
+])
+async def test_address_result_numeric_uprn_can_be_passed_to_every_uprn_tool(finder, arguments):
+    from homedata_mcp.parity import sample_arguments
+
+    sent: list[httpx.Request] = []
+    uprn = 100023336956
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(request)
+        return httpx.Response(200, json={"uprn": uprn})
+
+    client = HomedataClient(api_key="k", transport=httpx.MockTransport(handler))
+    server, _ = build_server(client)
+    try:
+        async with Client(server) as mcp:
+            result = await mcp.call_tool(finder, arguments)
+            value = result.structured_content["uprn"]
+            assert type(value) is int
+            for tool in MANIFEST["tools"]:
+                if not any(p["name"] == "uprn" for p in tool["params"]):
+                    continue
+                args = sample_arguments(tool)
+                args["uprn"] = value
+                before = len(sent)
+                result = await mcp.call_tool(tool["name"], args)
+                assert not result.is_error, tool["name"]
+                assert len(sent) == before + 1
+                request = sent[-1]
+                import json
+
+                assert (
+                    str(uprn) in request.url.path
+                    or request.url.params.get("uprn") == str(uprn)
+                    or (request.content and json.loads(request.content).get("uprn") == str(uprn))
+                ), tool["name"]
+    finally:
+        await client.aclose()

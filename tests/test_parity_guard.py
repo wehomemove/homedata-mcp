@@ -170,3 +170,20 @@ def test_post_without_idempotency_key_is_caught():
     del request['idempotency_key']
     found = check_requests(manifest, {'listing_address': [request]})
     assert [(v.code, v.tool) for v in found] == [('IDEMPOTENCY_KEY_MISSING', 'listing_address')]
+
+
+@pytest.mark.parametrize("param,types", [
+    ("uprn", "string"),
+    ("uprn", ["string", "number"]),
+    ("with", ["string", "integer"]),
+])
+def test_guard_rejects_wrong_integer_support(param, types):
+    from homedata_mcp import calls
+
+    tool = calls.tool_by_name("property_custom")
+    assert tool is not None
+    schema = calls.input_schema(tool, {})
+    schema["properties"][param]["type"] = types
+    listed = [{"name": tool["name"], "description": calls.description_for(tool["name"]), "inputSchema": schema}]
+    found = check_listing({"tools": [tool], "static_tools": []}, listed)
+    assert any(v.code == "TYPE_MISMATCH" and v.detail.startswith(f"{param}:") for v in found)

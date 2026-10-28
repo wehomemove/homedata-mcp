@@ -59,11 +59,11 @@ def build(
 
     if base_method == "GET":
         @tool("property_base")
-        async def property_base(uprn: str) -> dict[str, Any]:
+        async def property_base(uprn: str | int) -> dict[str, Any]:
             return await client.get(base_path.format(uprn=uprn))
     else:
         @tool("property_base")
-        async def property_base_post(uprn: str) -> dict[str, Any]:
+        async def property_base_post(uprn: str | int) -> dict[str, Any]:
             return await client.post(base_path.format(uprn=uprn), json={})
 
     RiskType = Literal[risks_enum]  # type: ignore[valid-type]

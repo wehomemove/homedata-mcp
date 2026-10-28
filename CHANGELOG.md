@@ -14,6 +14,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   for a UPRN, address plus postcode, or coordinates. Costs 1000 tokens (£10 + VAT);
   the description asks for approval before spending and states the refund terms.
 
+### Changed
+- UPRN and other digit-only string parameters also accept non-negative JSON
+  integers and send them as digits. Their tool schemas now advertise string or
+  integer input. Negative numbers, decimals, booleans and non-digit text remain
+  invalid.
+
 ## [1.0.1] - 2026-10-14
 
 ### Changed

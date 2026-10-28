@@ -49,7 +49,6 @@ def test_property_custom_sends_with():
 @pytest.mark.parametrize("name,arguments,problem", [
     ("property_core", {}, "uprn is required"),
     ("property_core", {"uprn": "12a"}, "uprn must be digits only"),
-    ("property_core", {"uprn": 100023336956}, "uprn must be a string"),
     ("property_core", {"uprn": "1", "extra": "x"}, "unknown argument extra"),
     ("risks", {"risk_type": "volcano", "uprn": "1"}, "risk_type must be one of"),
     ("calc_mortgage", {"price": "lots", "deposit": 1, "rate": 1, "term": 1}, "price must be a number"),
@@ -100,3 +99,33 @@ def test_one_of_an_alternative_group_is_required():
         calls.build_request(spec("crime"), {})
     assert any("one of postcode or lat" in p for p in exc.value.problems)
     calls.build_request(spec("crime"), {"postcode": "SW1A 2AA"})
+
+
+@pytest.mark.parametrize("value", [0, 100023336956, "100023336956", "000123"])
+def test_digit_strings_and_nonnegative_integers_send_digits(value):
+    assert calls.build_request(spec("property_core"), {"uprn": value}).path == f"/property/{value}/core/"
+    assert calls.build_request(spec("risks"), {"risk_type": "all", "uprn": value}).query == {"uprn": str(value)}
+
+
+@pytest.mark.parametrize("value", [-1, 1.5, 1.0, True, False, "-1", "1.5", "abc", "12a"])
+def test_invalid_numeric_uprns_are_refused(value):
+    with pytest.raises(calls.InvalidArguments):
+        calls.build_request(spec("property_core"), {"uprn": value})
+
+
+def test_only_digit_string_schemas_accept_integers():
+    for tool in calls.tools():
+        schema = calls.input_schema(tool, {})
+        for param in tool["params"]:
+            prop = schema["properties"][param["name"]]
+            if param["type"] == "string" and param.get("pattern") == r"^\d+$":
+                assert prop["type"] == ["string", "integer"]
+                assert prop["minimum"] == 0
+                assert prop["pattern"] == r"^\d+$"
+            else:
+                assert prop["type"] == param["type"]
+
+
+def test_other_strings_still_reject_numbers():
+    with pytest.raises(calls.InvalidArguments):
+        calls.build_request(spec("address_postcode"), {"postcode": 123})

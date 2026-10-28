@@ -1,7 +1,7 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: 8e660fc7ae3a7ea28cb6adee5b5277ca7ed87f2170cf4e787ecc5f4f865501b9), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: a6eb8f4f95ec0a3bba8ae326220d8a2f909dc051e0fcdb7578e45a3cf8906c06), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface: All Endpoints
 
-Every account reaches every self-serve endpoint below. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The exception is the Premium section at the end: on-request products scoped per customer, not callable with a standard key. Except **All Property Listings**, which stays callable and token-metered for some accounts; its entry gives the path, parameters and weight those accounts use. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
+Every self-serve endpoint is on every account, except full listings history, which is licensed separately for accounts opened from 16 September 2026. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The Premium section at the end lists on-request products scoped per customer, not callable with a standard key. Except **All Property Listings**, which stays callable and token-metered for some accounts; its entry gives the path, parameters and weight those accounts use. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
 
 ### Property tiers: one UPRN in, fixed depth out, fixed cost
 
@@ -113,6 +113,11 @@ Pick one fact about one UPRN, cheaper than a tier when you only need one field. 
 - Every layer echoes a `query` block with `basis` (`title` = assessed against the whole Land Registry title polygon, `point` = the coordinate) and `in_coverage`
 - Coverage: England only (Environment Agency data). Outside England the response is still 200 with `in_coverage: false` and empty results. Treat that as "not assessed", never "not at risk"
 - Aliases: the older `/flood-risk/…` and `/flood/…` spellings answer forever with a `Link: rel="canonical"` header pointing here, but are not documented
+
+**GET /properties/{uprn}/ground_stability/**
+- Weight: 1 token
+- Purpose: Trees within root reach (canopy height measured, reach inferred), measured ground movement in mm a year from satellite readings near the home, and clay shrink-swell. Every response carries its sources and caveats. 1 token.
+- Params: `uprn` (required)
 
 **GET /solar-assessment/{uprn}/**
 - Weight: 5 tokens
@@ -305,6 +310,15 @@ Postcode, outcode or boundary-level stats, prices, demographics, amenities, heri
 - Purpose: Historic England listed buildings within a radius of a UK postcode. Returns Grade I / II* / II entries with name, location, list date, and a hyperlink back to the official Historic England record.
 - Params: `postcode` (required); `radius_km` (optional, advanced); `grade` (optional, advanced)
 
+### Rental appraisal
+
+A market rent for one home, with the comparable rentals behind it.
+
+**POST /rental-appraisal/**
+- Weight: 1000 tokens
+- Purpose: A market rent per calendar month for one home, with a likely range, a confidence tier and the comparable rentals behind it, each with its distance, rent and weight. Comparables have the same bedrooms and type and were advertised in the 180 days up to the appraisal date.
+- Params: `uprn` (optional); `address_line_1` (optional, alternative to the previous param); `postcode` (optional, alternative to the previous param); `lat` (optional, alternative to the previous param); `lng` (optional, alternative to the previous param); `beds` (optional); `type` (optional); `as_of` (optional, advanced); `limit` (optional, advanced)
+
 ### Tools
 
 Free calculators, no tokens spent. Use them anywhere.
@@ -338,7 +352,7 @@ Match an address to a UPRN, or list a postcode.
 Enterprise products, scoped and priced per customer. They are not part of the self-serve surface and do not spend tokens from your balance. Do not infer paths or parameters for them; the team agrees coverage, cadence, SLA and price directly. Register interest at https://homedata.co.uk/try. Except **All Property Listings**, which stays callable and token-metered for some accounts; its entry gives the path, parameters and weight those accounts use.
 
 **All Property Listings**: on request
-- Purpose: Thirty years of listing history for one property, what it asked, how often that was cut, and whether it sold or quietly came off.
+- Purpose: Full listing history for one property, what it asked, how often that was cut, and whether it sold or quietly came off.
 - Example (illustrative values): Last asking price £325,000; First listed: 30 September 2019; Left the market: Withdrawn; Days on market: 2,537; Price reductions: None; Property: 3 bed detached
 - Example response shape: `{"count":1,"results":[{"id":"7f9200c5-93be-487a-befa-26aa8667b3e4","street":"Mayfield Park North Fishponds BS16","postcode":"BS16 3NJ","transaction_type":"Sale","latest_price":325000,"bedrooms":3,"bathrooms":1,"reception_rooms":1,"property_type":"Detached","is_reduced":false,"times_reduced":0,"is_withdrawn":true,"days_on_market":2537,"added_date":"2019-09-30"}]}`
 - Call, for accounts with access: `GET /property_listings/`, 20 tokens a request

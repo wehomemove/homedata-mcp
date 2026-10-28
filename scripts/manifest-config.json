@@ -60,6 +60,17 @@
   "param_locations": {
     "listing-address": {
       "listing_id": "body"
+    },
+    "rental-appraisal": {
+      "uprn": "body",
+      "address_line_1": "body",
+      "postcode": "body",
+      "lat": "body",
+      "lng": "body",
+      "beds": "body",
+      "type": "body",
+      "as_of": "body",
+      "limit": "body"
     }
   },
   "idempotent_tools": [

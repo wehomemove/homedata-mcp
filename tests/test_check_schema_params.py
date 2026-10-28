@@ -96,8 +96,8 @@ def test_a_stale_exception_is_reported():
 
 
 def test_the_live_manifest_only_fails_on_the_known_escapes():
-    # The committed manifest still carries the catalogue's two defects; the guard
-    # must name exactly those and nothing else, or the exceptions are wrong.
+    # Pin the narrow exception set: each rental field needs its own citation
+    # because the live schema declares an open JSON object without named keys.
     live_schema_path = ROOT / "tests" / "fixtures" / "schema" / "loki-subset.yaml"
     assert live_schema_path.exists()
     manifest = json.loads((ROOT / "homedata_mcp" / "manifest" / "tools.json").read_text())
@@ -107,6 +107,8 @@ def test_the_live_manifest_only_fails_on_the_known_escapes():
     # exceptions became unused — which this guard reports rather than ignores.
     assert {(e["tool"], e["param"]) for e in exceptions.values()} == {
         ("calc_stamp_duty", "country"),
+        *(("rental_appraisal", name) for name in
+          ("uprn", "address_line_1", "postcode", "lat", "lng", "beds", "type", "as_of", "limit")),
     }
     assert {tool["name"] for tool in manifest["tools"]}
 

@@ -1,6 +1,6 @@
 """Homedata MCP server: UK property data as tools for AI assistants."""
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 from .client import HomedataClient, HomedataError
 

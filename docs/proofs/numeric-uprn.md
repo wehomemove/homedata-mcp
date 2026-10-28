@@ -9,10 +9,10 @@ Command: `.venv/bin/python -m pytest -q` (exit 0).
 
 ```text
 ........................................................................ [ 25%]
-........................................................................ [ 51%]
-........................................................................ [ 77%]
-...............................................................          [100%]
-279 passed in 7.58s
+........................................................................ [ 50%]
+........................................................................ [ 76%]
+....................................................................     [100%]
+284 passed in 7.68s
 ```
 
 Both address_match and address_postcode return a numeric UPRN in the mock response.
@@ -41,3 +41,11 @@ Merge-queue legs command with PROJECT_ONYX_CODE_ROOT set: exit 0, no legs printe
 (the project has no configured legs). No credential-dependent checks were deferred.
 Buttons and vision: not applicable, no Live Preview for homedata-mcp.
 AI: not applicable, this package change makes no model calls.
+
+## Rebase verification
+
+Rebased onto origin/main including the rental appraisal and ground stability tools.
+Preserved the rental appraisal JSON body test and extended numeric UPRN chaining
+to check body parameters as well as path and query parameters. The full suite
+above, changed-file Ruff check, and merge-queue legs command passed after resolving
+the conflicts. The project still has no configured merge-queue legs.

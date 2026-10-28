@@ -1,1 +1,0 @@
-tools.json is current against thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4

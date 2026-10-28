@@ -173,4 +173,5 @@ async def test_rental_appraisal_sends_json_body_and_reports_charge(arguments):
     assert sent[0].method == 'POST'
     assert sent[0].url.path == '/rental-appraisal/'
     assert not sent[0].url.query
+    # Body values go out as strings; loki's rental view parses them with int(str(v)) / float(str(v)).
     assert json.loads(sent[0].content) == {k: str(v) for k, v in arguments.items()}

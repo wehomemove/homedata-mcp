@@ -5,6 +5,15 @@ All notable changes to `homedata-mcp` will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `attr_ground_stability`: trees within root reach, measured ground movement and
+  clay shrink-swell for one UPRN, at 1 token. Also available as a property add-on.
+- `rental_appraisal`: monthly market rent, range, confidence and comparable rentals
+  for a UPRN, address plus postcode, or coordinates. Costs 1000 tokens (£10 + VAT);
+  the description asks for approval before spending and states the refund terms.
+
 ## [1.0.1] - 2026-10-14
 
 ### Changed

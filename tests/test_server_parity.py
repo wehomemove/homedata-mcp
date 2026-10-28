@@ -142,3 +142,36 @@ async def test_address_match_preserves_resolution_and_charge(status, reason, cha
     assert len(sent) == 1
     assert sent[0].url.path == '/address/match/'
     assert dict(sent[0].url.params) == {'address': '10 Downing Street', 'postcode': 'SW1A 2AA'}
+
+
+@pytest.mark.parametrize('arguments', [
+    {'uprn': '100023336956'},
+    {'address_line_1': '14 Example Road', 'postcode': 'SW11 1AA'},
+    {'lat': '51.4645', 'lng': '-0.1630', 'beds': 2, 'type': 'flat',
+     'as_of': '2026-10-01', 'limit': 0},
+])
+async def test_rental_appraisal_sends_json_body_and_reports_charge(arguments):
+    import json
+
+    sent = []
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(200, json={'rent_pcm': 2000},
+                              headers={'X-Tokens-Charged': '1000'})
+
+    client = HomedataClient(api_key='test-key', transport=httpx.MockTransport(handler))
+    server, _ = build_server(client)
+    try:
+        async with Client(server) as mcp:
+            result = await mcp.call_tool('rental_appraisal', arguments)
+            assert result.structured_content == {'rent_pcm': 2000}
+            assert result.meta['homedata']['tokens_charged'] == '1000'
+    finally:
+        await client.aclose()
+    assert len(sent) == 1
+    assert sent[0].method == 'POST'
+    assert sent[0].url.path == '/rental-appraisal/'
+    assert not sent[0].url.query
+    # Body values go out as strings; loki's rental view parses them with int(str(v)) / float(str(v)).
+    assert json.loads(sent[0].content) == {k: str(v) for k, v in arguments.items()}

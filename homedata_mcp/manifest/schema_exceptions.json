@@ -9,5 +9,59 @@
         "england"
       ]
     }
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "uprn",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read uprn; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "address_line_1",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read address_line_1; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "postcode",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read postcode; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "lat",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read lat; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "lng",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read lng; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "beds",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read beds; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "type",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read type; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "as_of",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read as_of; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
+  },
+  {
+    "tool": "rental_appraisal",
+    "param": "limit",
+    "reason": "The live schema declares an open JSON request object without named properties. This body key is explicitly read by the rental appraisal implementation.",
+    "evidence": "MEASURED 2026-10-28: POST /rental-appraisal/ schema requestBody is object with additionalProperties. loki core/customer_apis/rmas/views.py, INPUT contract and resolve_subject/_as_of_param/post read limit; Playground at thor 2be7d89015c6c8bc2d8170e99f3dabf575d478a4 declares this field."
   }
 ]

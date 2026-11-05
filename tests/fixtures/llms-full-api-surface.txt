@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: a6eb8f4f95ec0a3bba8ae326220d8a2f909dc051e0fcdb7578e45a3cf8906c06), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: e14ab6ad7036ec2941af2fd517596cd653df6538d3c5621d94ed4d76aaddefaa), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface: All Endpoints
 
 Every self-serve endpoint is on every account, except full listings history, which is licensed separately for accounts opened from 16 September 2026. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The Premium section at the end lists on-request products scoped per customer, not callable with a standard key. Except **All Property Listings**, which stays callable and token-metered for some accounts; its entry gives the path, parameters and weight those accounts use. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -77,6 +77,11 @@ Pick one fact about one UPRN, cheaper than a tier when you only need one field. 
 **GET /properties/{uprn}/epc/**
 - Weight: 1 token
 - Purpose: Energy Performance Certificate, current and potential energy efficiency rating, EPC floor area, and last inspection date. 1 token. Distinct from EPC Renovations (which returns the recommended works + costs).
+- Params: `uprn` (required)
+
+**GET /properties/{uprn}/epc_history/**
+- Weight: 1 token
+- Purpose: Every EPC certificate held for the property in one call, oldest first: certificate number, lodgement date, current and potential ratings, floor area, main fuel, fabric and heating descriptions, and a removed flag for withdrawn certificates. No certificate held: 404, token refunded. 1 token.
 - Params: `uprn` (required)
 
 **GET /properties/{uprn}/epc_renovations/**

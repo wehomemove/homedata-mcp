@@ -8,6 +8,11 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- `attr_epc_history`: every EPC certificate held for one UPRN, oldest first, with
+  ratings, floor area, fuel, fabric and heating, and a flag for withdrawn
+  certificates. Costs 1 token; a property with no certificate is a 404 and the
+  token is refunded. Also available as the `epc_history` property add-on, which
+  `with=all` does not include.
 - `attr_ground_stability`: trees within root reach, measured ground movement and
   clay shrink-swell for one UPRN, at 1 token. Also available as a property add-on.
 - `rental_appraisal`: monthly market rent, range, confidence and comparable rentals

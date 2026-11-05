@@ -220,3 +220,30 @@ async def test_address_result_numeric_uprn_can_be_passed_to_every_uprn_tool(find
                 ), tool["name"]
     finally:
         await client.aclose()
+
+
+@pytest.mark.parametrize('status,charged', [(200, '1'), (404, '0')])
+async def test_epc_history_reports_certificates_or_a_refunded_404(status, charged):
+    sent = []
+    body = ({'certificates': [{'certificate_number': '0001', 'lodgement_date': '2012-03-01', 'removed': False}]}
+            if status == 200 else {'detail': 'not found'})
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(status, json=body, headers={'X-Tokens-Charged': charged})
+
+    client = HomedataClient(api_key='test-key', transport=httpx.MockTransport(handler))
+    server, _ = build_server(client)
+    try:
+        async with Client(server) as mcp:
+            result = await mcp.call_tool('attr_epc_history', {'uprn': 100023336956}, raise_on_error=False)
+            assert result.is_error == (status == 404)
+            assert result.meta['homedata']['tokens_charged'] == charged
+            if status == 200:
+                assert result.structured_content == body
+    finally:
+        await client.aclose()
+    assert len(sent) == 1
+    assert sent[0].method == 'GET'
+    assert sent[0].url.path == '/properties/100023336956/epc_history/'
+    assert not sent[0].url.query

@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: api-surface (source_hash: e14ab6ad7036ec2941af2fd517596cd653df6538d3c5621d94ed4d76aaddefaa), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
+<!-- BEGIN GENERATED: api-surface (source_hash: 7b8633023ef2fbef3729dc0c4f9239f06b71496ffa73d0e1ab9542f8caeda461), written by scripts/sync-try-catalogue.mjs from the playground catalogue; do not edit by hand -->
 ## API Surface: All Endpoints
 
 Every self-serve endpoint is on every account, except full listings history, which is licensed separately for accounts opened from 16 September 2026. Requests spend tokens from a prepaid balance; endpoints differ only in how many. The Premium section at the end lists on-request products scoped per customer, not callable with a standard key. Except **All Property Listings**, which stays callable and token-metered for some accounts; its entry gives the path, parameters and weight those accounts use. Paths are relative to `https://api.homedata.co.uk/api/`; trailing slashes matter. Send `Authorization: Api-Key YOUR_KEY`.
@@ -133,6 +133,16 @@ Pick one fact about one UPRN, cheaper than a tier when you only need one field. 
 - Weight: 1 token
 - Purpose: Ofcom Connected Nations broadband speed data for a UK postcode, avg/max download+upload speeds, superfast/ultrafast/gigabit/full-fibre coverage %, and premises count. 1 token.
 - Params: `postcode` (required)
+
+**GET /mobile-coverage/**
+- Weight: 1 token
+- Purpose: Ofcom predicted mobile coverage for every address in a full UK postcode: EE, Three, O2 and Vodafone, each rated 0 to 4 for combined 4G/5G with Ofcom's own descriptor and data date. 1 token.
+- Params: `postcode` (required)
+
+**GET /properties/{uprn}/mobile_coverage/**
+- Weight: 1 token
+- Purpose: Ofcom predicted mobile coverage for exactly this address: EE, Three, O2 and Vodafone, each rated 0 to 4 for combined 4G/5G with Ofcom's own descriptor and data date. Never borrowed from a neighbouring address. 1 token.
+- Params: `uprn` (required)
 
 ### Sale flow
 
@@ -362,7 +372,7 @@ Enterprise products, scoped and priced per customer. They are not part of the se
 - Example response shape: `{"count":1,"results":[{"id":"7f9200c5-93be-487a-befa-26aa8667b3e4","street":"Mayfield Park North Fishponds BS16","postcode":"BS16 3NJ","transaction_type":"Sale","latest_price":325000,"bedrooms":3,"bathrooms":1,"reception_rooms":1,"property_type":"Detached","is_reduced":false,"times_reduced":0,"is_withdrawn":true,"days_on_market":2537,"added_date":"2019-09-30"}]}`
 - Call, for accounts with access: `GET /property_listings/`, 20 tokens a request
 - Params: `uprn` (required)
-- Access: Accounts opened before the switch to tokens on 16 September 2026 keep self-serve access at 20 tokens a request. Accounts opened since are refused with the code premium_endpoint (HTTP 403) until it is switched on for them. Register interest at https://homedata.co.uk/try?endpoint=property-listings
+- Access: Accounts opened before the switch to tokens on 16 September 2026 keep self-serve access at 20 tokens a request. Accounts opened since are refused with the code enterprise_only (HTTP 403, not charged) until it is switched on for them; the refusal lists any route they can call instead. Register interest at https://homedata.co.uk/try?endpoint=property-listings
 
 **Land Registry Sales**: on request
 - Purpose: What actually changed hands, not what was asked, every HM Land Registry confirmed completion, with the date and the real price.

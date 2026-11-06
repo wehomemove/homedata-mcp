@@ -8,6 +8,12 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+- `mobile_coverage` and `attr_mobile_coverage`: Ofcom predicted mobile coverage
+  for every address in a full UK postcode, or for exactly one UPRN. EE, Three, O2
+  and Vodafone are each rated 0 to 4 for combined 4G and 5G, with Ofcom's
+  descriptor and data date; a null operator means Ofcom holds no record. Each
+  costs 1 token. Also available as the `mobile_coverage` property add-on, which
+  `with=all` includes.
 - `attr_epc_history`: every EPC certificate held for one UPRN, oldest first, with
   ratings, floor area, fuel, fabric and heating, and a flag for withdrawn
   certificates. Costs 1 token; a property with no certificate is a 404 and the

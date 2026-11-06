@@ -247,3 +247,51 @@ async def test_epc_history_reports_certificates_or_a_refunded_404(status, charge
     assert sent[0].method == 'GET'
     assert sent[0].url.path == '/properties/100023336956/epc_history/'
     assert not sent[0].url.query
+
+
+MOBILE_RATING = {'rating': 4, 'descriptor': 'Good outdoor and in-home', 'data_date': '2026-07'}
+
+
+@pytest.mark.parametrize('tool,arguments,path,query', [
+    ('mobile_coverage', {'postcode': 'SW1A 2AA'}, '/mobile-coverage/', {'postcode': 'SW1A 2AA'}),
+    ('attr_mobile_coverage', {'uprn': 100023336956}, '/properties/100023336956/mobile_coverage/', {}),
+])
+async def test_mobile_coverage_tools_send_one_request_at_one_token(tool, arguments, path, query):
+    sent = []
+    body = {'operators': {'ee': MOBILE_RATING, 'three': MOBILE_RATING, 'o2': MOBILE_RATING, 'vodafone': None},
+            'attribution': 'Contains Ofcom data'}
+
+    def handler(request):
+        sent.append(request)
+        return httpx.Response(200, json=body, headers={'X-Tokens-Charged': '1'})
+
+    client = HomedataClient(api_key='test-key', transport=httpx.MockTransport(handler))
+    server, _ = build_server(client)
+    try:
+        async with Client(server) as mcp:
+            listed = {t.name: t for t in await mcp.list_tools()}
+            assert 'Costs 1 token.' in listed[tool].description
+            result = await mcp.call_tool(tool, arguments, raise_on_error=False)
+            assert not result.is_error
+            assert result.meta['homedata']['tokens_charged'] == '1'
+            assert result.structured_content == body
+    finally:
+        await client.aclose()
+    assert len(sent) == 1
+    assert sent[0].method == 'GET'
+    assert sent[0].url.path == path
+    assert dict(sent[0].url.params) == query
+
+
+async def test_mobile_coverage_requires_a_postcode():
+    def handler(request):
+        raise AssertionError('no request should be sent')
+
+    client = HomedataClient(api_key='test-key', transport=httpx.MockTransport(handler))
+    server, _ = build_server(client)
+    try:
+        async with Client(server) as mcp:
+            result = await mcp.call_tool('mobile_coverage', {}, raise_on_error=False)
+            assert result.is_error
+    finally:
+        await client.aclose()
